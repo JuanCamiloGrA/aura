@@ -6,3 +6,4 @@ Read ./SPEC.md for general information about the project.
 Always be proactive and make production ready code and atomic-conventional commits along all your runs.
 The architecture must have easy future compatibility for Kotlin Multiplatform.
 Always make sure to write code with 100% Test Coverage and include unit tests for everything.
+Procure the use of the newest versions of the packages and never use deprecated packages.
