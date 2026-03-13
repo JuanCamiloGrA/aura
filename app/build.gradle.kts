@@ -66,7 +66,7 @@ android {
     }
 
     sourceSets {
-        getByName("androidTest").assets.directories.add("$projectDir/schemas")
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
     }
 }
 
@@ -90,6 +90,8 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.material)

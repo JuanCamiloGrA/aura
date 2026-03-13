@@ -3,7 +3,6 @@ package com.humans.aura.core.services.database
 import androidx.room.testing.MigrationTestHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -19,12 +18,6 @@ class AuraDatabaseMigrationTest {
 
     @Test
     fun migrate_1_to_2() {
-        val schemaFile = java.io.File(
-            InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null),
-            "../assets/com.humans.aura.core.services.database.AuraDatabase/1.json",
-        )
-        assumeTrue(schemaFile.exists())
-
         helper.createDatabase(TEST_DB, 1).apply {
             execSQL("INSERT INTO daily_goals (id, day_start_epoch_millis, main_title, is_synced_to_d1) VALUES (1, 0, 'Goal', 0)")
             close()

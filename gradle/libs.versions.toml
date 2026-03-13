@@ -9,6 +9,7 @@ koinTest = "4.1.0"
 koin = "4.1.0"
 kotlin = "2.2.10"
 kotlinxCoroutines = "1.10.2"
+kotlinxSerialization = "1.8.1"
 ksp = "2.2.10-2.0.2"
 lifecycle = "2.9.4"
 activityCompose = "1.11.0"
@@ -50,6 +51,8 @@ koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin"
 koin-test-junit4 = { group = "io.insert-koin", name = "koin-test-junit4", version.ref = "koinTest" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
