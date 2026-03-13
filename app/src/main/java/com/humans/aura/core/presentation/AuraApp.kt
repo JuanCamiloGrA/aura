@@ -24,7 +24,10 @@ import com.humans.aura.features.daily_goals.presentation.DailyGoalsSection
 import com.humans.aura.features.stopwatch.presentation.StopwatchSection
 
 @Composable
-fun AuraApp() {
+fun AuraApp(
+    stopwatchSection: @Composable () -> Unit = { StopwatchSection() },
+    dailyGoalsSection: @Composable () -> Unit = { DailyGoalsSection() },
+) {
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
@@ -39,8 +42,8 @@ fun AuraApp() {
         ) {
             AppHeader()
             FoundationStrip()
-            StopwatchSection()
-            DailyGoalsSection()
+            stopwatchSection()
+            dailyGoalsSection()
         }
     }
 }
@@ -55,7 +58,7 @@ private fun AppHeader() {
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = "Phase 0 foundation: Compose shell, Koin dependency graph, and offline-first Room storage.",
+            text = "Milestone 1: unstoppable activity logging, local prediction, honest status tracking, and daily goals.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

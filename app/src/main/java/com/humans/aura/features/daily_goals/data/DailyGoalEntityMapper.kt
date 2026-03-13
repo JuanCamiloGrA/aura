@@ -12,6 +12,7 @@ fun DailyGoalWithSubtasks.toDomain(): DailyGoal = DailyGoal(
     subtasks = subtasks
         .sortedBy(GoalSubtaskEntity::position)
         .map(GoalSubtaskEntity::toDomain),
+    isAiGenerationPending = goal.isAiGenerationPending,
     isSyncedToD1 = goal.isSyncedToD1,
 )
 

@@ -11,10 +11,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,6 +32,30 @@ fun StopwatchSection(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    StopwatchSection(
+        uiState = uiState,
+        onDraftTitleChanged = viewModel::onDraftTitleChanged,
+        onUsePrediction = viewModel::usePrediction,
+        onRefreshPrediction = viewModel::refreshPrediction,
+        onLogNewActivity = viewModel::logNewActivity,
+        onMarkInaccurate = viewModel::markInaccurate,
+        onMarkLost = viewModel::markLost,
+        onClearAll = viewModel::clearAll,
+    )
+}
+
+@Composable
+fun StopwatchSection(
+    uiState: StopwatchUiState,
+    onDraftTitleChanged: (String) -> Unit,
+    onUsePrediction: () -> Unit,
+    onRefreshPrediction: () -> Unit,
+    onLogNewActivity: () -> Unit,
+    onMarkInaccurate: () -> Unit,
+    onMarkLost: () -> Unit,
+    onClearAll: () -> Unit,
+) {
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -39,7 +65,7 @@ fun StopwatchSection(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                text = "Stopwatch foundation",
+                text = "Stopwatch",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -48,23 +74,70 @@ fun StopwatchSection(
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
-            CurrentActivityBlock(uiState.currentActivity)
+            OutlinedTextField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("stopwatch_input"),
+                value = uiState.draftTitle,
+                onValueChange = onDraftTitleChanged,
+                label = { Text("Next activity") },
+                supportingText = {
+                    val prediction = uiState.prediction
+                    if (prediction != null) {
+                        Text("Suggested from local history: ${prediction.title}")
+                    } else {
+                        Text("Prediction is based on the same time window over the last 7 days.")
+                    }
+                },
+            )
+
+            if (uiState.prediction != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(
+                        modifier = Modifier.testTag("use_prediction_button"),
+                        onClick = onUsePrediction,
+                    ) {
+                        Text("Use suggestion")
+                    }
+                    OutlinedButton(onClick = onRefreshPrediction) {
+                        Text("Refresh")
+                    }
+                }
+            }
+
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("new_activity_button"),
+                onClick = onLogNewActivity,
+                enabled = uiState.draftTitle.isNotBlank() && !uiState.isLogging,
+            ) {
+                Text("New Activity")
+            }
+
+            CurrentActivityBlock(
+                activity = uiState.currentActivity,
+                runningDurationLabel = uiState.runningDurationLabel,
+            )
+            QuickStatusBlock(
+                onMarkInaccurate = onMarkInaccurate,
+                onMarkLost = onMarkLost,
+                enabled = uiState.currentActivity != null,
+            )
             RecentActivityBlock(uiState.recentActivities)
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = viewModel::seedSampleData) {
-                    Text(text = "Load demo timeline")
-                }
-                OutlinedButton(onClick = viewModel::clearAll) {
-                    Text(text = "Clear")
-                }
+            OutlinedButton(onClick = onClearAll) {
+                Text(text = "Clear activity history")
             }
         }
     }
 }
 
 @Composable
-private fun CurrentActivityBlock(activity: Activity?) {
+private fun CurrentActivityBlock(
+    activity: Activity?,
+    runningDurationLabel: String,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = "Current activity",
@@ -74,7 +147,7 @@ private fun CurrentActivityBlock(activity: Activity?) {
 
         if (activity == null) {
             Text(
-                text = "No open activity yet. Load the demo timeline to verify Room, flows, and Koin wiring.",
+                text = "No open activity yet. Type a title or accept the suggestion and press New Activity.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -82,6 +155,11 @@ private fun CurrentActivityBlock(activity: Activity?) {
         }
 
         Text(text = activity.title, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = "Running: $runningDurationLabel",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Text(
             text = "Status: ${activity.status.name.replace('_', ' ')}",
             style = MaterialTheme.typography.bodyMedium,
@@ -92,11 +170,37 @@ private fun CurrentActivityBlock(activity: Activity?) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun QuickStatusBlock(
+    onMarkInaccurate: () -> Unit,
+    onMarkLost: () -> Unit,
+    enabled: Boolean,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = if (activity.isSyncedToD1) "Synced to D1" else "Pending local-only sync",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = "Honesty shortcuts",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
         )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(
+                modifier = Modifier.testTag("mark_inaccurate_button"),
+                onClick = onMarkInaccurate,
+                enabled = enabled,
+            ) {
+                Text("Inaccurate")
+            }
+            OutlinedButton(
+                modifier = Modifier.testTag("mark_lost_button"),
+                onClick = onMarkLost,
+                enabled = enabled,
+            ) {
+                Text("Lost")
+            }
+        }
     }
 }
 
@@ -104,14 +208,14 @@ private fun CurrentActivityBlock(activity: Activity?) {
 private fun RecentActivityBlock(activities: List<Activity>) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Recent activity history",
+            text = "Past activities",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
 
         if (activities.isEmpty()) {
             Text(
-                text = "The history list is empty until local records exist.",
+                text = "Your log is empty. The first tap should create the active activity instantly.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -126,6 +230,8 @@ private fun RecentActivityBlock(activities: List<Activity>) {
                     append(formatClock(activity.startTimeEpochMillis))
                     append(" to ")
                     append(activity.endTimeEpochMillis?.let(::formatClock) ?: "running")
+                    append(" - ")
+                    append(activity.status.name.lowercase().replaceFirstChar(Char::uppercase))
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,

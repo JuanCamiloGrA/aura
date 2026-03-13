@@ -7,6 +7,6 @@ import com.humans.aura.features.stopwatch.data.RoomActivityRepository
 import org.koin.dsl.module
 
 val repositoryModule = module {
-    single<ActivityRepository> { RoomActivityRepository(get(), get()) }
+    single<ActivityRepository> { RoomActivityRepository(get(), get(), get()) }
     single<DailyGoalRepository> { RoomDailyGoalRepository(get(), get()) }
 }
