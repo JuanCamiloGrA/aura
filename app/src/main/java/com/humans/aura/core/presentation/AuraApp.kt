@@ -1,20 +1,35 @@
 package com.humans.aura.core.presentation
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,15 +42,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.humans.aura.features.assistant_chat.presentation.AssistantChatSection
-import com.humans.aura.features.day_summary.presentation.DaySummarySection
 import com.humans.aura.features.daily_goals.presentation.DailyGoalsSection
+import com.humans.aura.features.day_summary.presentation.DaySummarySection
 import com.humans.aura.features.stopwatch.presentation.StopwatchSection
 
-private enum class AuraDestination {
-    DASHBOARD,
-    CHAT,
-    SUMMARY,
+private enum class AuraDestination(val label: String, val tag: String) {
+    DASHBOARD("Dashboard", "nav_dashboard"),
+    CHAT("Assistant", "nav_assistant"),
+    SUMMARY("Summary", "nav_summary"),
 }
 
 @Composable
@@ -47,137 +63,167 @@ fun AuraApp(
 ) {
     var destination by remember { mutableStateOf(AuraDestination.DASHBOARD) }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-        ) {
-            AppHeader()
-            FoundationStrip()
-            NavigationStrip(
+    Scaffold(
+        topBar = { AuraTopBar() },
+        bottomBar = {
+            AuraBottomBar(
                 destination = destination,
                 onNavigate = { destination = it },
             )
-            when (destination) {
+        },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { contentPadding ->
+        AnimatedContent(
+            targetState = destination,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding),
+            transitionSpec = {
+                (fadeIn(spring(stiffness = 700f)) + scaleIn(initialScale = 0.98f))
+                    .togetherWith(fadeOut(spring(stiffness = 900f)))
+            },
+            label = "tab_transition",
+        ) { target ->
+            when (target) {
                 AuraDestination.DASHBOARD -> {
-                    stopwatchSection()
-                    dailyGoalsSection()
-                    HorizontalDivider()
-                    daySummarySection()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(32.dp),
+                    ) {
+                        stopwatchSection()
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outline,
+                            thickness = 0.5.dp,
+                        )
+                        dailyGoalsSection()
+                        Spacer(Modifier.height(8.dp))
+                    }
                 }
-                AuraDestination.CHAT -> assistantChatSection()
-                AuraDestination.SUMMARY -> daySummarySection()
+
+                AuraDestination.CHAT -> {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        assistantChatSection()
+                    }
+                }
+
+                AuraDestination.SUMMARY -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        daySummarySection()
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Top Bar ─────────────────────────────────────────────────────────────────
+
+@Composable
+private fun AuraTopBar() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Text(
+            text = "AURA",
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(horizontal = 24.dp)
+                .padding(top = 20.dp, bottom = 12.dp),
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 6.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+}
+
+// ── Bottom Nav ──────────────────────────────────────────────────────────────
+
+@Composable
+private fun AuraBottomBar(
+    destination: AuraDestination,
+    onNavigate: (AuraDestination) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Column {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outline,
+                thickness = 0.5.dp,
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .windowInsetsPadding(WindowInsets.navigationBars),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AuraDestination.entries.forEach { dest ->
+                    BottomNavItem(
+                        label = dest.label,
+                        selected = destination == dest,
+                        testTag = dest.tag,
+                        onClick = { onNavigate(dest) },
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun AppHeader() {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = "AURA",
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = "Milestone 3: polished logging, real Gemini wiring, night mode sleep state, and refined voice interaction.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun NavigationStrip(
-    destination: AuraDestination,
-    onNavigate: (AuraDestination) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        NavigationPill(
-            text = "Dashboard",
-            selected = destination == AuraDestination.DASHBOARD,
-            testTag = "nav_dashboard",
-        ) { onNavigate(AuraDestination.DASHBOARD) }
-        NavigationPill(
-            text = "Assistant",
-            selected = destination == AuraDestination.CHAT,
-            testTag = "nav_assistant",
-        ) { onNavigate(AuraDestination.CHAT) }
-        NavigationPill(
-            text = "Summary",
-            selected = destination == AuraDestination.SUMMARY,
-            testTag = "nav_summary",
-        ) { onNavigate(AuraDestination.SUMMARY) }
-    }
-}
-
-@Composable
-private fun NavigationPill(
-    text: String,
+private fun BottomNavItem(
+    label: String,
     selected: Boolean,
     testTag: String,
     onClick: () -> Unit,
 ) {
-    Box(
+    Column(
         modifier = Modifier
-            .wrapContentWidth()
-            .background(
-                color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer,
-                shape = RoundedCornerShape(999.dp),
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
             )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .padding(horizontal = 20.dp, vertical = 6.dp)
             .testTag(testTag),
-        contentAlignment = Alignment.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = if (selected) {
+                MaterialTheme.colorScheme.onBackground
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         )
-    }
-}
-
-@Composable
-private fun FoundationStrip() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        FoundationPill(text = "Compose")
-        FoundationPill(text = "Room")
-        FoundationPill(text = "Koin")
-    }
-}
-
-@Composable
-private fun FoundationPill(text: String) {
-    Box(
-        modifier = Modifier
-            .wrapContentWidth()
-            .background(
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = RoundedCornerShape(999.dp),
+        AnimatedVisibility(
+            visible = selected,
+            enter = fadeIn(spring(stiffness = 600f)) + scaleIn(initialScale = 0f),
+            exit = fadeOut(spring(stiffness = 900f)),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(4.dp)
+                    .background(MaterialTheme.colorScheme.onBackground, CircleShape),
             )
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-        )
+        }
     }
 }

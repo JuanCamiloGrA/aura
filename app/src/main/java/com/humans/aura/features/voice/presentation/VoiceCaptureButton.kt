@@ -22,6 +22,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.abs
@@ -55,23 +56,22 @@ fun VoiceCaptureButton(
     onCancelCapture: () -> Unit,
     onReleaseCapture: () -> Unit,
 ) {
+    val isActive = uiState.stage == VoiceUiStage.Listening ||
+        uiState.stage == VoiceUiStage.PartialReady
+    val isError = uiState.stage == VoiceUiStage.PermissionDenied ||
+        uiState.stage == VoiceUiStage.Error
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
+            .height(58.dp)
             .background(
-                color = when (uiState.stage) {
-                    VoiceUiStage.Listening,
-                    VoiceUiStage.PartialReady,
-                    -> MaterialTheme.colorScheme.primaryContainer
-
-                    VoiceUiStage.PermissionDenied,
-                    VoiceUiStage.Error,
-                    -> MaterialTheme.colorScheme.errorContainer
-
-                    else -> MaterialTheme.colorScheme.secondaryContainer
+                color = when {
+                    isActive -> MaterialTheme.colorScheme.primary
+                    isError -> MaterialTheme.colorScheme.errorContainer
+                    else -> MaterialTheme.colorScheme.surfaceVariant
                 },
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(16.dp),
             )
             .pointerInput(Unit) {
                 awaitEachGesture {
@@ -100,7 +100,7 @@ fun VoiceCaptureButton(
                     }
                 }
             }
-            .padding(horizontal = 18.dp)
+            .padding(horizontal = 20.dp)
             .testTag("voice_capture_button"),
         contentAlignment = Alignment.Center,
     ) {
@@ -115,17 +115,23 @@ fun VoiceCaptureButton(
                     VoiceUiStage.Speaking -> "AURA is speaking"
                     VoiceUiStage.PermissionDenied -> "Enable microphone access"
                     VoiceUiStage.Error -> uiState.errorMessage ?: "Voice error"
-                    VoiceUiStage.Idle -> if (uiState.transcript.isNotBlank()) "Ready: ${uiState.transcript}" else "Hold to talk"
+                    VoiceUiStage.Idle -> if (uiState.transcript.isNotBlank()) {
+                        "Ready: ${uiState.transcript}"
+                    } else {
+                        "HOLD TO TALK"
+                    }
                 },
-                style = MaterialTheme.typography.bodyLarge,
-                color = when (uiState.stage) {
-                    VoiceUiStage.PermissionDenied,
-                    VoiceUiStage.Error,
-                    -> MaterialTheme.colorScheme.onErrorContainer
-
-                    else -> MaterialTheme.colorScheme.onSecondaryContainer
+                style = if (uiState.stage == VoiceUiStage.Idle && uiState.transcript.isBlank()) {
+                    MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp)
+                } else {
+                    MaterialTheme.typography.bodyMedium
                 },
                 fontWeight = FontWeight.SemiBold,
+                color = when {
+                    isActive -> MaterialTheme.colorScheme.onPrimary
+                    isError -> MaterialTheme.colorScheme.onErrorContainer
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
             )
 
             if (uiState.stage == VoiceUiStage.PermissionDenied) {

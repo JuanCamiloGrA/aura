@@ -1,39 +1,52 @@
 package com.humans.aura.features.stopwatch.presentation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.humans.aura.core.domain.models.Activity
+import com.humans.aura.core.domain.models.ActivityStatus
 import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
 import java.time.ZoneId
@@ -85,33 +98,23 @@ fun StopwatchSection(
         }
     }
 
-    Card(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        verticalArrangement = Arrangement.spacedBy(28.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            SectionHeader(
-                title = "Stopwatch",
-                eyebrow = "Log the next thing in under a second",
-            )
 
-            if (uiState.isLoading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            }
+        // ── Timer Hero ──────────────────────────────────────────────────
+        TimerHero(
+            activity = uiState.currentActivity,
+            runningDurationLabel = uiState.runningDurationLabel,
+        )
 
-            CurrentActivityHero(
-                activity = uiState.currentActivity,
-                runningDurationLabel = uiState.runningDurationLabel,
-            )
-
-            OutlinedTextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("stopwatch_input"),
+        // ── Input + CTA ─────────────────────────────────────────────────
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            GhostTextField(
                 value = draftFieldValue,
+                ghostText = if (uiState.isPredictionAutofilled) null else uiState.prediction?.title,
+                isPrediction = uiState.isPredictionAutofilled,
                 onValueChange = { value ->
                     val previousText = draftFieldValue.text
                     draftFieldValue = value
@@ -119,211 +122,322 @@ fun StopwatchSection(
                         onDraftTitleChanged(value.text)
                     }
                 },
-                label = { Text("Next activity") },
-                supportingText = {
-                    val prediction = uiState.prediction
-                    if (prediction != null) {
-                        Text("Suggested now: ${prediction.title}. Start typing to overwrite it.")
-                    } else {
-                        Text("Prediction uses your recent timing pattern.")
-                    }
+                onDone = {
+                    keyboardController?.hide()
+                    onLogNewActivity()
                 },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        keyboardController?.hide()
-                        onLogNewActivity()
-                    },
-                ),
-                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("stopwatch_input"),
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("new_activity_button"),
-                    onClick = {
-                        keyboardController?.hide()
-                        onLogNewActivity()
-                    },
-                    enabled = uiState.draftTitle.isNotBlank() && !uiState.isLogging,
+            // ── Massive CTA ─────────────────────────────────────────────
+            Button(
+                onClick = {
+                    keyboardController?.hide()
+                    onLogNewActivity()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(58.dp)
+                    .testTag("new_activity_button"),
+                enabled = uiState.draftTitle.isNotBlank() && !uiState.isLogging,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.outline,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            ) {
+                Text(
+                    text = if (uiState.isLogging) "LOGGING..." else "NEW ACTIVITY",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp,
+                )
+            }
+
+            // ── Subtle prediction actions ───────────────────────────────
+            AnimatedVisibility(
+                visible = uiState.prediction != null,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(if (uiState.isLogging) "Logging..." else "Log now")
-                }
-                if (uiState.prediction != null) {
-                    OutlinedButton(
-                        modifier = Modifier.testTag("use_prediction_button"),
+                    TextButton(
                         onClick = onUsePrediction,
+                        modifier = Modifier.testTag("use_prediction_button"),
                     ) {
-                        Text("Use suggestion")
+                        Text(
+                            text = "USE SUGGESTION",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    TextButton(onClick = onRefreshPrediction) {
+                        Text(
+                            text = "REFRESH",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
+        }
 
-            if (uiState.prediction != null) {
-                OutlinedButton(onClick = onRefreshPrediction) {
-                    Text("Refresh suggestion")
-                }
-            }
-
-            QuickStatusBlock(
+        // ── Status Shortcuts ────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = uiState.currentActivity != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
+        ) {
+            StatusShortcuts(
                 onMarkInaccurate = onMarkInaccurate,
                 onMarkLost = onMarkLost,
-                enabled = uiState.currentActivity != null,
             )
-            RecentActivityBlock(uiState.recentActivities)
+        }
 
-            OutlinedButton(onClick = onClearAll) {
-                Text(text = "Clear activity history")
-            }
+        // ── Timeline ────────────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = uiState.recentActivities.isNotEmpty(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
+        ) {
+            Timeline(
+                activities = uiState.recentActivities,
+                onClearAll = onClearAll,
+            )
         }
     }
 }
 
-@Composable
-private fun SectionHeader(
-    title: String,
-    eyebrow: String,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = eyebrow.uppercase(),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-    }
-}
+// ── Timer Hero ──────────────────────────────────────────────────────────────
 
 @Composable
-private fun CurrentActivityHero(
+private fun TimerHero(
     activity: Activity?,
     runningDurationLabel: String,
 ) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = RoundedCornerShape(28.dp),
-            )
-            .padding(18.dp),
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = "Now",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
+        Text(
+            text = if (activity != null) "TRACKING" else "READY",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
-            if (activity == null) {
-                Text(
-                    text = "No open activity yet",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Text(
-                    text = "Type a title or accept the suggestion, then press Log now.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
+        Text(
+            text = runningDurationLabel,
+            style = MaterialTheme.typography.displayLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
+
+        Text(
+            text = activity?.title ?: "No open activity",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = if (activity != null) FontWeight.Medium else FontWeight.Normal,
+            color = if (activity != null) {
+                MaterialTheme.colorScheme.onBackground
             } else {
-                Text(
-                    text = activity.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Text(
-                    text = runningDurationLabel,
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Text(
-                    text = "Status: ${activity.status.name.replace('_', ' ')}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Text(
-                    text = "Started at ${formatClock(activity.startTimeEpochMillis)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-            }
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        if (activity != null && activity.status != ActivityStatus.ACCURATE) {
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = activity.status.name.replace('_', ' '),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(6.dp),
+                    )
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
         }
     }
 }
 
+// ── Ghost Text Input ────────────────────────────────────────────────────────
+
 @Composable
-private fun QuickStatusBlock(
+private fun GhostTextField(
+    value: TextFieldValue,
+    ghostText: String?,
+    isPrediction: Boolean,
+    onValueChange: (TextFieldValue) -> Unit,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val textColor by animateColorAsState(
+        targetValue = if (isPrediction) {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        animationSpec = spring(stiffness = 400f),
+        label = "ghost_color",
+    )
+
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = textColor),
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { onDone() }),
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+        modifier = modifier,
+        decorationBox = { innerTextField ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(14.dp),
+                    )
+                    .padding(horizontal = 20.dp, vertical = 18.dp),
+            ) {
+                if (value.text.isEmpty()) {
+                    Text(
+                        text = ghostText ?: "What are you doing next?",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                            alpha = if (ghostText != null) 0.6f else 0.35f,
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                innerTextField()
+            }
+        },
+    )
+}
+
+// ── Status Shortcuts ────────────────────────────────────────────────────────
+
+@Composable
+private fun StatusShortcuts(
     onMarkInaccurate: () -> Unit,
     onMarkLost: () -> Unit,
-    enabled: Boolean,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         Text(
-            text = "Honesty shortcuts",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            text = "HONESTY",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.align(Alignment.CenterVertically),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(
-                modifier = Modifier.testTag("mark_inaccurate_button"),
-                onClick = onMarkInaccurate,
-                enabled = enabled,
-            ) {
-                Text("Inaccurate")
+        Spacer(Modifier.weight(1f))
+        TextButton(
+            onClick = onMarkInaccurate,
+            modifier = Modifier.testTag("mark_inaccurate_button"),
+        ) {
+            Text(
+                text = "INACCURATE",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(
+            onClick = onMarkLost,
+            modifier = Modifier.testTag("mark_lost_button"),
+        ) {
+            Text(
+                text = "LOST",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+// ── Timeline ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun Timeline(
+    activities: List<Activity>,
+    onClearAll: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "TIMELINE",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(onClick = onClearAll) {
+                Text(
+                    text = "CLEAR",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            OutlinedButton(
-                modifier = Modifier.testTag("mark_lost_button"),
-                onClick = onMarkLost,
-                enabled = enabled,
-            ) {
-                Text("Lost")
-            }
+        }
+
+        Spacer(Modifier.height(4.dp))
+
+        activities.takeLast(6).reversed().forEach { activity ->
+            TimelineEntry(activity)
         }
     }
 }
 
 @Composable
-private fun RecentActivityBlock(activities: List<Activity>) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun TimelineEntry(activity: Activity) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
-            text = "Recent timeline",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            text = formatClock(activity.startTimeEpochMillis),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
         )
 
-        if (activities.isEmpty()) {
-            Text(
-                text = "Your log is empty. The first tap should create the active activity instantly.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            return
-        }
+        Text(
+            text = activity.title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
 
-        activities.takeLast(6).forEach { activity ->
-            Text(
-                text = buildString {
-                    append(activity.title)
-                    append(" - ")
-                    append(formatClock(activity.startTimeEpochMillis))
-                    append(" to ")
-                    append(activity.endTimeEpochMillis?.let(::formatClock) ?: "running")
-                    append(" - ")
-                    append(activity.status.name.lowercase().replaceFirstChar(Char::uppercase))
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
+        Text(
+            text = activity.endTimeEpochMillis?.let { end ->
+                val minutes = (end - activity.startTimeEpochMillis) / 60_000
+                "${minutes}m"
+            } ?: "now",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
