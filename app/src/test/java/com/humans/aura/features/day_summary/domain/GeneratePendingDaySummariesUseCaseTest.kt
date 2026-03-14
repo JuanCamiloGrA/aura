@@ -12,6 +12,7 @@ import com.humans.aura.core.domain.models.AiResponse
 import com.humans.aura.core.domain.models.DaySummary
 import com.humans.aura.core.domain.models.DaySummaryContext
 import com.humans.aura.core.domain.models.SummaryGenerationStatus
+import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
@@ -84,6 +85,7 @@ class GeneratePendingDaySummariesUseCaseTest {
                 timeProvider = FakeTimeProvider(),
             ),
             buildDaySummaryPromptUseCase = BuildDaySummaryPromptUseCase(Json),
+            daySummaryContextJsonEncoder = DaySummaryContextJsonEncoder(Json),
             aiTextGenerator = FakeAiTextGenerator { AiResponse("ok", "gemini-test") },
             timeProvider = FakeTimeProvider(),
         )
@@ -91,7 +93,7 @@ class GeneratePendingDaySummariesUseCaseTest {
         useCase()
 
         assertEquals(listOf(100L, 200L), contextRepository.requestedDays)
-        assertTrue(repository.pendingContextUpdates.all { it.rawContextJson.contains("dayStartEpochMillis") })
+        assertTrue(repository.pendingContextUpdates.all { it.rawContextJson.contains("\"activities\"") })
     }
 
     private fun createUseCase(
@@ -104,6 +106,7 @@ class GeneratePendingDaySummariesUseCaseTest {
             timeProvider = FakeTimeProvider(),
         ),
         buildDaySummaryPromptUseCase = BuildDaySummaryPromptUseCase(Json),
+        daySummaryContextJsonEncoder = DaySummaryContextJsonEncoder(Json),
         aiTextGenerator = aiTextGenerator,
         timeProvider = FakeTimeProvider(),
     )
@@ -115,6 +118,7 @@ class GeneratePendingDaySummariesUseCaseTest {
         id = id,
         dayStartEpochMillis = dayStartEpochMillis,
         summaryText = null,
+        reflection = null,
         rawContextJson = "{}",
         promptVersion = "v1",
         modelName = "pending",
@@ -194,6 +198,7 @@ class GeneratePendingDaySummariesUseCaseTest {
                 id = id,
                 dayStartEpochMillis = dayStartEpochMillis,
                 summaryText = null,
+                reflection = null,
                 rawContextJson = "{}",
                 promptVersion = "v1",
                 modelName = "pending",

@@ -92,10 +92,10 @@ fun interface GeminiApiKeyProvider {
 
 class GeminiModelSelector {
     fun modelFor(task: com.humans.aura.core.domain.models.AiTask): String = when (task) {
-        com.humans.aura.core.domain.models.AiTask.DAY_SUMMARY -> "gemini-2.5-flash"
+        com.humans.aura.core.domain.models.AiTask.DAY_SUMMARY,
         com.humans.aura.core.domain.models.AiTask.CHAT,
         com.humans.aura.core.domain.models.AiTask.TRANSLATION,
-        -> "gemini-2.5-flash-lite"
+        -> "gemini-2.0-flash-lite"
     }
 }
 

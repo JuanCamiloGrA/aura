@@ -3,7 +3,10 @@ package com.humans.aura.features.stopwatch.presentation
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -63,7 +66,7 @@ class StopwatchSectionTest {
         composeRule.onNodeWithTag("stopwatch_input").performTextInput("Focus")
         composeRule.onNodeWithTag("new_activity_button").assertIsEnabled().performClick()
         composeRule.onNodeWithTag("use_prediction_button").performClick()
-        composeRule.onNodeWithText("Refresh").performClick()
+        composeRule.onNodeWithText("Refresh suggestion").performClick()
         composeRule.onNodeWithTag("mark_inaccurate_button").performClick()
         composeRule.onNodeWithTag("mark_lost_button").performClick()
         composeRule.onNodeWithText("Clear activity history").performClick()
@@ -94,9 +97,9 @@ class StopwatchSectionTest {
             }
         }
 
-        composeRule.onNodeWithText("No open activity yet. Type a title or accept the suggestion and press New Activity.").assertIsDisplayed()
+        composeRule.onNodeWithText("No open activity yet").assertIsDisplayed()
         composeRule.onNodeWithText("Your log is empty. The first tap should create the active activity instantly.").assertIsDisplayed()
-        composeRule.onNodeWithText("Prediction is based on the same time window over the last 7 days.").assertIsDisplayed()
+        composeRule.onNodeWithText("Prediction uses your recent timing pattern.").assertIsDisplayed()
         composeRule.onNodeWithTag("new_activity_button").assertIsNotEnabled()
         composeRule.onNodeWithTag("mark_inaccurate_button").assertIsNotEnabled()
         composeRule.onNodeWithTag("mark_lost_button").assertIsNotEnabled()
@@ -124,5 +127,35 @@ class StopwatchSectionTest {
         }
 
         composeRule.onNodeWithTag("new_activity_button").assertIsNotEnabled()
+    }
+
+    @Test
+    fun section_renders_activity_without_prediction_and_running_recent_item() {
+        composeRule.setContent {
+            AuraTheme {
+                StopwatchSection(
+                    uiState = StopwatchUiState(
+                        currentActivity = Activity(1, "Build", 0L, null, ActivityStatus.INACCURATE, false),
+                        recentActivities = listOf(Activity(2, "Review", 0L, null, ActivityStatus.ACTIVE, false)),
+                        draftTitle = "Build",
+                        runningDurationLabel = "00:02:00",
+                    ),
+                    onDraftTitleChanged = {},
+                    onUsePrediction = {},
+                    onRefreshPrediction = {},
+                    onLogNewActivity = {},
+                    onMarkInaccurate = {},
+                    onMarkLost = {},
+                    onClearAll = {},
+                )
+            }
+        }
+
+        composeRule.onAllNodesWithText("Build").assertCountEquals(2)
+        composeRule.onNodeWithText("Status: INACCURATE").assertIsDisplayed()
+        composeRule.onNodeWithText("Review", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("running", substring = true).assertIsDisplayed()
+        composeRule.onAllNodesWithTag("use_prediction_button").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Refresh suggestion").assertCountEquals(0)
     }
 }

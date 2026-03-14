@@ -47,5 +47,7 @@ class RoomConversationContextRepository(
     }
 
     override suspend fun buildChatContext(limit: Int): DaySummaryContext =
-        buildContextForDay(timeProvider.currentDayStartEpochMillis())
+        buildContextForDay(timeProvider.currentDayStartEpochMillis()).let { context ->
+            context.copy(recentSummaries = context.recentSummaries.take(limit))
+        }
 }

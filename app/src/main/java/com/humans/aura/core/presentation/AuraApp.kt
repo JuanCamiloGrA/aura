@@ -89,7 +89,7 @@ private fun AppHeader() {
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = "Milestone 2: AI day closure, contextual assistant chat, and voice capture workflows.",
+            text = "Milestone 3: polished logging, real Gemini wiring, night mode sleep state, and refined voice interaction.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

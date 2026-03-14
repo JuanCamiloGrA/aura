@@ -1,10 +1,12 @@
 package com.humans.aura.features.daily_goals.domain
 
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
+import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.domain.models.GoalSubtaskDraft
 
 class SaveTodayGoalUseCase(
     private val dailyGoalRepository: DailyGoalRepository,
+    private val wallpaperController: WallpaperController,
 ) {
     suspend operator fun invoke(
         mainTitle: String,
@@ -17,5 +19,6 @@ class SaveTodayGoalUseCase(
             mainTitle = mainTitle,
             subtasks = cleanedSubtasks,
         )
+        wallpaperController.setWorkModeWallpaper(mainTitle.trim())
     }
 }

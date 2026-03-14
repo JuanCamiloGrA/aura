@@ -1,10 +1,15 @@
 package com.humans.aura.features.stopwatch.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -16,8 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.humans.aura.core.domain.models.Activity
@@ -55,24 +62,29 @@ fun StopwatchSection(
     onMarkLost: () -> Unit,
     onClearAll: () -> Unit,
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = "Stopwatch",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
+            SectionHeader(
+                title = "Stopwatch",
+                eyebrow = "Log the next thing in under a second",
             )
 
             if (uiState.isLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
+
+            CurrentActivityHero(
+                activity = uiState.currentActivity,
+                runningDurationLabel = uiState.runningDurationLabel,
+            )
 
             OutlinedTextField(
                 modifier = Modifier
@@ -84,41 +96,50 @@ fun StopwatchSection(
                 supportingText = {
                     val prediction = uiState.prediction
                     if (prediction != null) {
-                        Text("Suggested from local history: ${prediction.title}")
+                        Text("Suggested now: ${prediction.title}")
                     } else {
-                        Text("Prediction is based on the same time window over the last 7 days.")
+                        Text("Prediction uses your recent timing pattern.")
                     }
                 },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        keyboardController?.hide()
+                        onLogNewActivity()
+                    },
+                ),
+                singleLine = true,
             )
 
-            if (uiState.prediction != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("new_activity_button"),
+                    onClick = {
+                        keyboardController?.hide()
+                        onLogNewActivity()
+                    },
+                    enabled = uiState.draftTitle.isNotBlank() && !uiState.isLogging,
+                ) {
+                    Text(if (uiState.isLogging) "Logging..." else "Log now")
+                }
+                if (uiState.prediction != null) {
                     OutlinedButton(
                         modifier = Modifier.testTag("use_prediction_button"),
                         onClick = onUsePrediction,
                     ) {
                         Text("Use suggestion")
                     }
-                    OutlinedButton(onClick = onRefreshPrediction) {
-                        Text("Refresh")
-                    }
                 }
             }
 
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("new_activity_button"),
-                onClick = onLogNewActivity,
-                enabled = uiState.draftTitle.isNotBlank() && !uiState.isLogging,
-            ) {
-                Text("New Activity")
+            if (uiState.prediction != null) {
+                OutlinedButton(onClick = onRefreshPrediction) {
+                    Text("Refresh suggestion")
+                }
             }
 
-            CurrentActivityBlock(
-                activity = uiState.currentActivity,
-                runningDurationLabel = uiState.runningDurationLabel,
-            )
             QuickStatusBlock(
                 onMarkInaccurate = onMarkInaccurate,
                 onMarkLost = onMarkLost,
@@ -134,42 +155,81 @@ fun StopwatchSection(
 }
 
 @Composable
-private fun CurrentActivityBlock(
+private fun SectionHeader(
+    title: String,
+    eyebrow: String,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = eyebrow.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun CurrentActivityHero(
     activity: Activity?,
     runningDurationLabel: String,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            text = "Current activity",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-
-        if (activity == null) {
-            Text(
-                text = "No open activity yet. Type a title or accept the suggestion and press New Activity.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(28.dp),
             )
-            return
-        }
+            .padding(18.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "Now",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
 
-        Text(text = activity.title, style = MaterialTheme.typography.bodyLarge)
-        Text(
-            text = "Running: $runningDurationLabel",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "Status: ${activity.status.name.replace('_', ' ')}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "Started at ${formatClock(activity.startTimeEpochMillis)}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+            if (activity == null) {
+                Text(
+                    text = "No open activity yet",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = "Type a title or accept the suggestion, then press Log now.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            } else {
+                Text(
+                    text = activity.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = runningDurationLabel,
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = "Status: ${activity.status.name.replace('_', ' ')}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = "Started at ${formatClock(activity.startTimeEpochMillis)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+        }
     }
 }
 
@@ -208,7 +268,7 @@ private fun QuickStatusBlock(
 private fun RecentActivityBlock(activities: List<Activity>) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Past activities",
+            text = "Recent timeline",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
@@ -222,7 +282,7 @@ private fun RecentActivityBlock(activities: List<Activity>) {
             return
         }
 
-        activities.forEach { activity ->
+        activities.takeLast(6).forEach { activity ->
             Text(
                 text = buildString {
                     append(activity.title)

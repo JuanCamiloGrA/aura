@@ -6,6 +6,7 @@ import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.AiGenerationException
 import com.humans.aura.core.domain.models.AiRequest
 import com.humans.aura.core.domain.models.AiTask
+import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
 
@@ -13,6 +14,7 @@ class GeneratePendingDaySummariesUseCase(
     private val daySummaryRepository: DaySummaryRepository,
     private val assembleDaySummaryContextUseCase: AssembleDaySummaryContextUseCase,
     private val buildDaySummaryPromptUseCase: BuildDaySummaryPromptUseCase,
+    private val daySummaryContextJsonEncoder: DaySummaryContextJsonEncoder,
     private val aiTextGenerator: AiTextGenerator,
     private val timeProvider: TimeProvider,
 ) {
@@ -27,11 +29,12 @@ class GeneratePendingDaySummariesUseCase(
         summaries.forEach { summary ->
             val context = assembleDaySummaryContextUseCase(summary.dayStartEpochMillis)
             val prompt = buildDaySummaryPromptUseCase(context)
+            val rawContextJson = daySummaryContextJsonEncoder.encode(context)
             val now = timeProvider.currentTimeMillis()
 
             daySummaryRepository.updatePendingContext(
                 summaryId = summary.id,
-                rawContextJson = prompt,
+                rawContextJson = rawContextJson,
                 promptVersion = PROMPT_VERSION,
                 modelName = MODEL_NAME,
                 lastAttemptEpochMillis = now,
@@ -87,8 +90,8 @@ class GeneratePendingDaySummariesUseCase(
         this is IOException || this is AiGenerationException.Retryable
 
     companion object {
-        const val MODEL_NAME = "gemini-fast-text"
-        const val PROMPT_VERSION = "m2-day-summary-v1"
+        const val MODEL_NAME = "gemini-2.0-flash-lite"
+        const val PROMPT_VERSION = "m3-day-summary-v1"
         const val SYSTEM_INSTRUCTION = "You are AURA, an honest but supportive daily reflection assistant."
     }
 }

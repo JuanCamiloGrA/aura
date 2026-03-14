@@ -2,6 +2,7 @@ package com.humans.aura
 
 import android.app.Application
 import androidx.work.Configuration
+import com.humans.aura.core.coordination.AppIntentCoordinator
 import com.humans.aura.core.di.appModules
 import com.humans.aura.core.services.sync.AuraWorkerFactory
 import org.koin.android.ext.koin.androidContext
@@ -20,6 +21,7 @@ class AuraApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         koinApplication
+        koinApplication.koin.get<AppIntentCoordinator>().start()
     }
 
     override val workManagerConfiguration: Configuration

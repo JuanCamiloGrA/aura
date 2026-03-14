@@ -2,6 +2,7 @@ package com.humans.aura.features.day_summary.data
 
 import com.humans.aura.core.domain.models.SummaryGenerationStatus
 import com.humans.aura.core.services.database.entity.summary.DailySummaryEntity
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -38,5 +39,36 @@ class DaySummaryEntityMapperTest {
         assertEquals(3000L, domain.createdAtEpochMillis)
         assertEquals(4000L, domain.updatedAtEpochMillis)
         assertEquals(false, domain.isSyncedToD1)
+    }
+
+    @Test
+    fun to_domain_with_parser_maps_structured_reflection() {
+        val entity = DailySummaryEntity(
+            id = 8,
+            dayStartEpochMillis = 1000,
+            summaryText = """{"wins":["Deep work"],"friction_points":["Slack"],"tomorrow_pivot":"Protect the morning."}""",
+            rawContextJson = "{}",
+            promptVersion = "m3-day-summary-v1",
+            modelName = "gemini-2.0-flash-lite",
+            generationStatus = SummaryGenerationStatus.COMPLETED.name,
+            errorMessage = null,
+            lastAttemptEpochMillis = 2000,
+            createdAtEpochMillis = 3000,
+            updatedAtEpochMillis = 4000,
+            isSyncedToD1 = false,
+        )
+
+        val domain = entity.toDomain(
+            DaySummaryReflectionParser(
+                Json {
+                    ignoreUnknownKeys = true
+                    explicitNulls = false
+                },
+            ),
+        )
+
+        assertEquals(listOf("Deep work"), domain.reflection?.wins)
+        assertEquals(listOf("Slack"), domain.reflection?.frictionPoints)
+        assertEquals("Protect the morning.", domain.reflection?.tomorrowPivot)
     }
 }

@@ -2,7 +2,9 @@ package com.humans.aura.features.voice.presentation
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
@@ -47,7 +49,7 @@ class VoiceCaptureButtonTest {
         composeRule.setContent {
             AuraTheme {
                 VoiceCaptureButton(
-                    uiState = VoiceUiState(isListening = true),
+                    uiState = VoiceUiState(stage = VoiceUiStage.Listening),
                     onStartCapture = {},
                     onCancelCapture = {},
                     onReleaseCapture = { releases += 1 },
@@ -71,7 +73,7 @@ class VoiceCaptureButtonTest {
         composeRule.setContent {
             AuraTheme {
                 VoiceCaptureButton(
-                    uiState = VoiceUiState(isListening = true),
+                    uiState = VoiceUiState(stage = VoiceUiStage.Listening),
                     onStartCapture = {},
                     onCancelCapture = { cancels += 1 },
                     onReleaseCapture = {},
@@ -94,7 +96,7 @@ class VoiceCaptureButtonTest {
         composeRule.setContent {
             AuraTheme {
                 VoiceCaptureButton(
-                    uiState = VoiceUiState(isCancelled = true),
+                    uiState = VoiceUiState(stage = VoiceUiStage.Cancelled),
                     onStartCapture = {},
                     onCancelCapture = {},
                     onReleaseCapture = {},
@@ -107,11 +109,11 @@ class VoiceCaptureButtonTest {
     }
 
     @Test
-    fun transcript_state_is_rendered() {
+    fun partial_transcript_state_is_rendered() {
         composeRule.setContent {
             AuraTheme {
                 VoiceCaptureButton(
-                    uiState = VoiceUiState(transcript = "hello there"),
+                    uiState = VoiceUiState(stage = VoiceUiStage.PartialReady, partialTranscript = "hello there"),
                     onStartCapture = {},
                     onCancelCapture = {},
                     onReleaseCapture = {},
@@ -119,15 +121,15 @@ class VoiceCaptureButtonTest {
             }
         }
 
-        composeRule.onNodeWithText("Ready: hello there").assertIsDisplayed()
+        composeRule.onNodeWithText("Listening... hello there").assertIsDisplayed()
     }
 
     @Test
-    fun error_state_is_rendered() {
+    fun permission_state_requests_permission_hint() {
         composeRule.setContent {
             AuraTheme {
                 VoiceCaptureButton(
-                    uiState = VoiceUiState(errorMessage = "Microphone permission denied"),
+                    uiState = VoiceUiState(stage = VoiceUiStage.PermissionDenied, errorMessage = "Microphone permission denied"),
                     onStartCapture = {},
                     onCancelCapture = {},
                     onReleaseCapture = {},
@@ -135,6 +137,98 @@ class VoiceCaptureButtonTest {
             }
         }
 
-        composeRule.onNodeWithText("Microphone permission denied").assertIsDisplayed()
+        composeRule.onNodeWithText("Enable microphone access").assertIsDisplayed()
+        composeRule.onNodeWithTag("voice_permission_hint").assertIsDisplayed()
+    }
+
+    @Test
+    fun permission_denied_tap_requests_permission_instead_of_starting_capture() {
+        var permissionRequests = 0
+        var starts = 0
+
+        composeRule.setContent {
+            AuraTheme {
+                VoiceCaptureButton(
+                    uiState = VoiceUiState(stage = VoiceUiStage.PermissionDenied),
+                    onRequestPermission = { permissionRequests += 1 },
+                    onStartCapture = { starts += 1 },
+                    onCancelCapture = {},
+                    onReleaseCapture = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("voice_capture_button").performTouchInput {
+            down(center)
+            advanceEventTime(50)
+            up()
+        }
+
+        assertEquals(1, permissionRequests)
+        assertEquals(0, starts)
+    }
+
+    @Test
+    fun idle_transcript_and_error_states_are_rendered() {
+        composeRule.setContent {
+            AuraTheme {
+                androidx.compose.foundation.layout.Column {
+                    VoiceCaptureButton(
+                        uiState = VoiceUiState(
+                            stage = VoiceUiStage.Idle,
+                            transcript = "Plan the next block",
+                        ),
+                        onStartCapture = {},
+                        onCancelCapture = {},
+                        onReleaseCapture = {},
+                    )
+                    VoiceCaptureButton(
+                        uiState = VoiceUiState(
+                            stage = VoiceUiStage.Error,
+                            errorMessage = "Mic error",
+                        ),
+                        onStartCapture = {},
+                        onCancelCapture = {},
+                        onReleaseCapture = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Ready: Plan the next block").assertIsDisplayed()
+        composeRule.onNodeWithText("Mic error").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Tap again to grant permission").assertCountEquals(0)
+    }
+
+    @Test
+    fun transcribing_sending_and_speaking_states_are_rendered() {
+        composeRule.setContent {
+            AuraTheme {
+                androidx.compose.foundation.layout.Column {
+                    VoiceCaptureButton(
+                        uiState = VoiceUiState(stage = VoiceUiStage.Transcribing),
+                        onStartCapture = {},
+                        onCancelCapture = {},
+                        onReleaseCapture = {},
+                    )
+                    VoiceCaptureButton(
+                        uiState = VoiceUiState(stage = VoiceUiStage.Sending),
+                        onStartCapture = {},
+                        onCancelCapture = {},
+                        onReleaseCapture = {},
+                    )
+                    VoiceCaptureButton(
+                        uiState = VoiceUiState(stage = VoiceUiStage.Speaking),
+                        onStartCapture = {},
+                        onCancelCapture = {},
+                        onReleaseCapture = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Transcribing...").assertIsDisplayed()
+        composeRule.onNodeWithText("Sending...").assertIsDisplayed()
+        composeRule.onNodeWithText("AURA is speaking").assertIsDisplayed()
     }
 }

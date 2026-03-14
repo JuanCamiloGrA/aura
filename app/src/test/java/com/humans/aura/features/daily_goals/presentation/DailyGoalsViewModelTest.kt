@@ -5,6 +5,7 @@ import com.humans.aura.MainDispatcherRule
 import com.humans.aura.core.domain.interfaces.ActivityRepository
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
 import com.humans.aura.core.domain.interfaces.TimeProvider
+import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
 import com.humans.aura.core.domain.models.DailyGoal
@@ -14,16 +15,19 @@ import com.humans.aura.features.daily_goals.domain.ClearTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayActivitiesUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.SaveTodayGoalUseCase
+import com.humans.aura.features.daily_goals.domain.ToggleGoalSubtaskUseCase
 import com.humans.aura.features.stopwatch.domain.ActivityPrediction
 import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DailyGoalsViewModelTest {
 
     @get:Rule
@@ -67,15 +71,29 @@ class DailyGoalsViewModelTest {
         assertEquals(listOf("Implement"), goalRepository.savedSubtasks.map { it.title })
     }
 
+    @Test
+    fun toggle_subtask_delegates_to_repository() = runTest {
+        val goalRepository = FakeDailyGoalRepository()
+        val viewModel = createViewModel(goalRepository)
+        advanceUntilIdle()
+
+        viewModel.toggleSubtask(99L, true)
+        advanceUntilIdle()
+
+        assertEquals(99L to true, goalRepository.toggledSubtask)
+    }
+
     private fun createViewModel(
         goalRepository: FakeDailyGoalRepository,
     ): DailyGoalsViewModel {
         val activityRepository = FakeActivityRepository()
         val timeProvider = FakeTimeProvider()
+        val wallpaperController = FakeWallpaperController()
         return DailyGoalsViewModel(
             observeTodayGoalUseCase = ObserveTodayGoalUseCase(goalRepository),
             observeTodayActivitiesUseCase = ObserveTodayActivitiesUseCase(activityRepository, timeProvider),
-            saveTodayGoalUseCase = SaveTodayGoalUseCase(goalRepository),
+            saveTodayGoalUseCase = SaveTodayGoalUseCase(goalRepository, wallpaperController),
+            toggleGoalSubtaskUseCase = ToggleGoalSubtaskUseCase(goalRepository),
             clearTodayGoalUseCase = ClearTodayGoalUseCase(goalRepository),
         )
     }
@@ -86,6 +104,7 @@ class DailyGoalsViewModelTest {
         private val goalFlow = MutableStateFlow(goal)
         var savedMainTitle: String? = null
         var savedSubtasks: List<GoalSubtaskDraft> = emptyList()
+        var toggledSubtask: Pair<Long, Boolean>? = null
 
         override fun observeTodayGoal(): Flow<DailyGoal?> = goalFlow
 
@@ -94,6 +113,10 @@ class DailyGoalsViewModelTest {
         override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<GoalSubtaskDraft>) {
             savedMainTitle = mainTitle
             savedSubtasks = subtasks
+        }
+
+        override suspend fun toggleSubtask(subtaskId: Long, isCompleted: Boolean) {
+            toggledSubtask = subtaskId to isCompleted
         }
 
         override suspend fun clearTodayGoal() = Unit
@@ -112,5 +135,10 @@ class DailyGoalsViewModelTest {
     private class FakeTimeProvider : TimeProvider {
         override fun currentTimeMillis(): Long = 0L
         override fun currentDayStartEpochMillis(): Long = 0L
+    }
+
+    private class FakeWallpaperController : WallpaperController {
+        override suspend fun setWorkModeWallpaper(title: String) = Unit
+        override suspend fun setNightModeWallpaper() = Unit
     }
 }

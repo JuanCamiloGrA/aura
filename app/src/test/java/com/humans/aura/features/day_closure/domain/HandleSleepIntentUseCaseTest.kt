@@ -49,6 +49,7 @@ class HandleSleepIntentUseCaseTest {
                 id = 1L,
                 dayStartEpochMillis = dayStartEpochMillis,
                 summaryText = null,
+                reflection = null,
                 rawContextJson = "{}",
                 promptVersion = "v1",
                 modelName = "pending",
@@ -75,6 +76,8 @@ class HandleSleepIntentUseCaseTest {
 
     private class FakeWallpaperController : WallpaperController {
         var calls = 0
+
+        override suspend fun setWorkModeWallpaper(title: String) = Unit
 
         override suspend fun setNightModeWallpaper() {
             calls += 1

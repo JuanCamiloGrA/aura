@@ -8,5 +8,6 @@ data class AssistantChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val draftMessage: String = "",
     val isSending: Boolean = false,
+    val lastErrorMessage: String? = null,
     val isLoading: Boolean = false,
 )

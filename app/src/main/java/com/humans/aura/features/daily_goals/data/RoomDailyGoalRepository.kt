@@ -41,6 +41,10 @@ class RoomDailyGoalRepository(
         )
     }
 
+    override suspend fun toggleSubtask(subtaskId: Long, isCompleted: Boolean) {
+        dailyGoalDao.updateSubtaskCompletion(subtaskId, isCompleted)
+    }
+
     override suspend fun clearTodayGoal() {
         dailyGoalDao.deleteGoalForDay(timeProvider.currentDayStartEpochMillis())
     }

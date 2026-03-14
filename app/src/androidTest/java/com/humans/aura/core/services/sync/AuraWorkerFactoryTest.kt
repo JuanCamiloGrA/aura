@@ -15,6 +15,7 @@ import com.humans.aura.core.domain.models.AiResponse
 import com.humans.aura.core.domain.models.DaySummary
 import com.humans.aura.core.domain.models.DaySummaryContext
 import com.humans.aura.core.domain.models.SummaryGenerationStatus
+import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
 import com.humans.aura.features.day_summary.domain.AssembleDaySummaryContextUseCase
 import com.humans.aura.features.day_summary.domain.BuildDaySummaryPromptUseCase
 import com.humans.aura.features.day_summary.domain.GeneratePendingDaySummariesUseCase
@@ -80,6 +81,7 @@ class AuraWorkerFactoryTest {
             },
         ),
         buildDaySummaryPromptUseCase = BuildDaySummaryPromptUseCase(Json),
+        daySummaryContextJsonEncoder = DaySummaryContextJsonEncoder(Json),
         aiTextGenerator = object : AiTextGenerator {
             override suspend fun generate(request: AiRequest): AiResponse = AiResponse("ok", "gemini-test")
         },

@@ -44,6 +44,7 @@ class RoomConversationContextRepositoryTest {
                 id = dayOffset,
                 dayStartEpochMillis = dayOffset * 1_000,
                 summaryText = "summary-$dayOffset",
+                reflection = null,
                 rawContextJson = "{}",
                 promptVersion = "v1",
                 modelName = "gemini",
@@ -126,6 +127,8 @@ class RoomConversationContextRepositoryTest {
         override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<com.humans.aura.core.domain.models.GoalSubtaskDraft>) {
             error("Not needed in test")
         }
+
+        override suspend fun toggleSubtask(subtaskId: Long, isCompleted: Boolean) = Unit
 
         override suspend fun clearTodayGoal() = Unit
     }

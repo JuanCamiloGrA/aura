@@ -14,6 +14,11 @@ import org.junit.Test
 
 class RoomDaySummaryRepositoryTest {
 
+    private val reflectionParser = DaySummaryReflectionParser(kotlinx.serialization.json.Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+    })
+
     @Test
     fun observe_methods_map_entities_to_domain() = runTest {
         val entity = summaryEntity(id = 1, dayStartEpochMillis = 2_000)
@@ -21,7 +26,7 @@ class RoomDaySummaryRepositoryTest {
             latest = entity,
             recent = listOf(entity),
         )
-        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(5_000))
+        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(5_000), reflectionParser)
 
         assertEquals(1L, repository.observeLatestSummary().first()?.id)
         assertEquals(listOf(1L), repository.observeRecentSummaries(limit = 5).first().map { it.id })
@@ -31,7 +36,7 @@ class RoomDaySummaryRepositoryTest {
     fun create_pending_summary_returns_existing_when_present() = runTest {
         val existing = summaryEntity(id = 3, dayStartEpochMillis = 1_000)
         val dao = FakeDaySummaryDao(byDayStart = mutableMapOf(1_000L to existing), byId = mutableMapOf(3L to existing))
-        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(5_000))
+        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(5_000), reflectionParser)
 
         val result = repository.createPendingSummary(1_000)
 
@@ -42,7 +47,7 @@ class RoomDaySummaryRepositoryTest {
     @Test
     fun create_pending_summary_inserts_new_pending_record() = runTest {
         val dao = FakeDaySummaryDao()
-        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(5_000))
+        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(5_000), reflectionParser)
 
         val result = repository.createPendingSummary(1_000)
 
@@ -59,7 +64,7 @@ class RoomDaySummaryRepositoryTest {
     fun get_pending_summaries_maps_pending_entities() = runTest {
         val pending = listOf(summaryEntity(id = 4), summaryEntity(id = 5))
         val dao = FakeDaySummaryDao(pending = pending)
-        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(9_000))
+        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(9_000), reflectionParser)
 
         val result = repository.getPendingSummaries(limit = 2)
 
@@ -70,7 +75,7 @@ class RoomDaySummaryRepositoryTest {
     fun update_pending_context_updates_retry_metadata_and_clears_error() = runTest {
         val existing = summaryEntity(id = 1, errorMessage = "old")
         val dao = FakeDaySummaryDao(byId = mutableMapOf(1L to existing))
-        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(0))
+        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(0), reflectionParser)
 
         repository.updatePendingContext(1, "{\"x\":1}", "v2", "gemini", 77)
 
@@ -88,7 +93,7 @@ class RoomDaySummaryRepositoryTest {
     fun update_summary_result_marks_summary_completed() = runTest {
         val existing = summaryEntity(id = 1)
         val dao = FakeDaySummaryDao(byId = mutableMapOf(1L to existing))
-        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(0))
+        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(0), reflectionParser)
 
         repository.updateSummaryResult(1, "done", "gemini", 88)
 
@@ -101,10 +106,25 @@ class RoomDaySummaryRepositoryTest {
     }
 
     @Test
+    fun observe_latest_summary_parses_structured_reflection() = runTest {
+        val entity = summaryEntity(
+            id = 7,
+            summaryText = """{"wins":["Focus block"],"friction_points":["Meetings"],"tomorrow_pivot":"Start offline."}""",
+            generationStatus = SummaryGenerationStatus.COMPLETED.name,
+        )
+        val dao = FakeDaySummaryDao(latest = entity, recent = listOf(entity), byId = mutableMapOf(7L to entity))
+        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(0), reflectionParser)
+
+        val latest = repository.observeLatestSummary().first()
+
+        assertEquals(listOf("Focus block"), latest?.reflection?.wins)
+    }
+
+    @Test
     fun record_retryable_failure_keeps_pending_status() = runTest {
         val existing = summaryEntity(id = 1)
         val dao = FakeDaySummaryDao(byId = mutableMapOf(1L to existing))
-        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(0))
+        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(0), reflectionParser)
 
         repository.recordRetryableFailure(1, "network", "gemini", 99)
 
@@ -119,7 +139,7 @@ class RoomDaySummaryRepositoryTest {
     fun record_terminal_failure_marks_failed_status() = runTest {
         val existing = summaryEntity(id = 1)
         val dao = FakeDaySummaryDao(byId = mutableMapOf(1L to existing))
-        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(0))
+        val repository = RoomDaySummaryRepository(dao, FakeTimeProvider(0), reflectionParser)
 
         repository.recordTerminalFailure(1, "fatal", "gemini", 111)
 

@@ -2,17 +2,9 @@ package com.humans.aura.features.stopwatch.presentation
 
 import com.humans.aura.MainDispatcherRule
 import com.humans.aura.core.domain.interfaces.ActivityRepository
-import com.humans.aura.core.domain.interfaces.DaySummaryRepository
-import com.humans.aura.core.domain.interfaces.IntentMediator
-import com.humans.aura.core.domain.interfaces.SyncScheduler
 import com.humans.aura.core.domain.interfaces.TimeProvider
-import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
-import com.humans.aura.core.domain.models.AppIntent
-import com.humans.aura.core.domain.models.DaySummary
-import com.humans.aura.core.domain.models.SummaryGenerationStatus
-import com.humans.aura.features.day_closure.domain.HandleSleepIntentUseCase
 import com.humans.aura.features.stopwatch.domain.ActivityPrediction
 import com.humans.aura.features.stopwatch.domain.ClearActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
@@ -24,9 +16,7 @@ import com.humans.aura.features.stopwatch.domain.UpdateCurrentActivityStatusUseC
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -52,8 +42,7 @@ class StopwatchViewModelTest {
             recent = listOf(Activity(2, "Review", 1L, 61_000L, ActivityStatus.ACCURATE, false)),
             prediction = ActivityPrediction("Review", 2, 100L),
         )
-        val mediator = FakeIntentMediator()
-        val viewModel = createViewModel(activityRepository, mediator)
+        val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -69,8 +58,7 @@ class StopwatchViewModelTest {
     @Test
     fun draft_changes_override_prediction_and_use_prediction_restores_it() = runTest {
         val activityRepository = FakeActivityRepository(prediction = ActivityPrediction("Review", 2, 100L))
-        val mediator = FakeIntentMediator()
-        val viewModel = createViewModel(activityRepository, mediator)
+        val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -87,8 +75,7 @@ class StopwatchViewModelTest {
     @Test
     fun refresh_prediction_updates_ui() = runTest {
         val activityRepository = FakeActivityRepository(prediction = null)
-        val mediator = FakeIntentMediator()
-        val viewModel = createViewModel(activityRepository, mediator)
+        val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -105,8 +92,7 @@ class StopwatchViewModelTest {
     @Test
     fun log_new_activity_uses_explicit_draft_and_resets_logging_state() = runTest {
         val activityRepository = FakeActivityRepository(prediction = null)
-        val mediator = FakeIntentMediator()
-        val viewModel = createViewModel(activityRepository, mediator)
+        val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -122,8 +108,7 @@ class StopwatchViewModelTest {
     @Test
     fun log_new_activity_uses_prediction_when_draft_is_blank() = runTest {
         val activityRepository = FakeActivityRepository(prediction = ActivityPrediction("Review", 2, 100L))
-        val mediator = FakeIntentMediator()
-        val viewModel = createViewModel(activityRepository, mediator)
+        val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -136,8 +121,7 @@ class StopwatchViewModelTest {
     @Test
     fun log_new_activity_with_blank_input_and_missing_prediction_does_not_log() = runTest {
         val activityRepository = FakeActivityRepository(prediction = null)
-        val mediator = FakeIntentMediator()
-        val viewModel = createViewModel(activityRepository, mediator)
+        val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -152,8 +136,7 @@ class StopwatchViewModelTest {
     @Test
     fun log_new_activity_ignores_reentry_while_logging() = runTest {
         val activityRepository = FakeActivityRepository(logGate = CompletableDeferred())
-        val mediator = FakeIntentMediator()
-        val viewModel = createViewModel(activityRepository, mediator)
+        val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -175,8 +158,7 @@ class StopwatchViewModelTest {
     @Test
     fun log_new_activity_failure_preserves_draft() = runTest {
         val activityRepository = FakeActivityRepository(throwOnLog = true)
-        val mediator = FakeIntentMediator()
-        val viewModel = createViewModel(activityRepository, mediator)
+        val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -192,7 +174,7 @@ class StopwatchViewModelTest {
     @Test
     fun status_buttons_delegate_to_repository() = runTest {
         val activityRepository = FakeActivityRepository()
-        val viewModel = createViewModel(activityRepository, FakeIntentMediator())
+        val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -206,7 +188,7 @@ class StopwatchViewModelTest {
     @Test
     fun clear_all_resets_state_and_repository() = runTest {
         val activityRepository = FakeActivityRepository(prediction = ActivityPrediction("Review", 2, 100L))
-        val viewModel = createViewModel(activityRepository, FakeIntentMediator())
+        val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -219,39 +201,8 @@ class StopwatchViewModelTest {
         assertEquals("", viewModel.uiState.value.draftTitle)
     }
 
-    @Test
-    fun sleep_intent_triggers_day_closure_handler() = runTest {
-        val activityRepository = FakeActivityRepository()
-        val daySummaryRepository = FakeDaySummaryRepository()
-        val mediator = FakeIntentMediator()
-        val viewModel = StopwatchViewModel(
-            observeCurrentActivityUseCase = ObserveCurrentActivityUseCase(activityRepository),
-            observeRecentActivitiesUseCase = ObserveRecentActivitiesUseCase(activityRepository),
-            logNewActivityUseCase = LogNewActivityUseCase(activityRepository, FakeTimeProvider()),
-            predictNextActivityTitleUseCase = PredictNextActivityTitleUseCase(activityRepository, FakeTimeProvider()),
-            updateCurrentActivityStatusUseCase = UpdateCurrentActivityStatusUseCase(activityRepository),
-            clearActivitiesUseCase = ClearActivitiesUseCase(activityRepository),
-            intentMediator = mediator,
-            handleSleepIntentUseCase = HandleSleepIntentUseCase(
-                daySummaryRepository = daySummaryRepository,
-                timeProvider = FakeTimeProvider(),
-                wallpaperController = FakeWallpaperController(),
-                syncScheduler = FakeSyncScheduler(),
-            ),
-        )
-        startCollecting(viewModel)
-        advanceUntilIdle()
-
-        mediator.emit(AppIntent.SleepLogged("Sleep", 50L))
-        advanceUntilIdle()
-
-        assertEquals(1, daySummaryRepository.pendingCalls)
-        viewModel.uiState.value
-    }
-
     private fun createViewModel(
         activityRepository: FakeActivityRepository,
-        mediator: FakeIntentMediator,
     ): StopwatchViewModel = StopwatchViewModel(
         observeCurrentActivityUseCase = ObserveCurrentActivityUseCase(activityRepository),
         observeRecentActivitiesUseCase = ObserveRecentActivitiesUseCase(activityRepository),
@@ -259,13 +210,6 @@ class StopwatchViewModelTest {
         predictNextActivityTitleUseCase = PredictNextActivityTitleUseCase(activityRepository, FakeTimeProvider()),
         updateCurrentActivityStatusUseCase = UpdateCurrentActivityStatusUseCase(activityRepository),
         clearActivitiesUseCase = ClearActivitiesUseCase(activityRepository),
-        intentMediator = mediator,
-        handleSleepIntentUseCase = HandleSleepIntentUseCase(
-            daySummaryRepository = FakeDaySummaryRepository(),
-            timeProvider = FakeTimeProvider(),
-            wallpaperController = FakeWallpaperController(),
-            syncScheduler = FakeSyncScheduler(),
-        ),
     )
 
     private fun kotlinx.coroutines.test.TestScope.startCollecting(viewModel: StopwatchViewModel) {
@@ -319,57 +263,8 @@ class StopwatchViewModelTest {
         }
     }
 
-    private class FakeDaySummaryRepository : DaySummaryRepository {
-        var pendingCalls = 0
-
-        override fun observeLatestSummary(): Flow<DaySummary?> = MutableStateFlow(null)
-
-        override fun observeRecentSummaries(limit: Int): Flow<List<DaySummary>> = MutableStateFlow(emptyList())
-
-        override suspend fun createPendingSummary(dayStartEpochMillis: Long): DaySummary {
-            pendingCalls += 1
-            return DaySummary(
-                id = pendingCalls.toLong(),
-                dayStartEpochMillis = dayStartEpochMillis,
-                summaryText = null,
-                rawContextJson = "{}",
-                promptVersion = "v1",
-                modelName = "pending",
-                generationStatus = SummaryGenerationStatus.PENDING,
-                errorMessage = null,
-                lastAttemptEpochMillis = null,
-                createdAtEpochMillis = dayStartEpochMillis,
-                updatedAtEpochMillis = dayStartEpochMillis,
-                isSyncedToD1 = false,
-            )
-        }
-
-        override suspend fun getPendingSummaries(limit: Int): List<DaySummary> = emptyList()
-        override suspend fun updatePendingContext(summaryId: Long, rawContextJson: String, promptVersion: String, modelName: String, lastAttemptEpochMillis: Long) = Unit
-        override suspend fun updateSummaryResult(summaryId: Long, summaryText: String, modelName: String, lastAttemptEpochMillis: Long) = Unit
-        override suspend fun recordRetryableFailure(summaryId: Long, errorMessage: String, modelName: String, lastAttemptEpochMillis: Long) = Unit
-        override suspend fun recordTerminalFailure(summaryId: Long, errorMessage: String, modelName: String, lastAttemptEpochMillis: Long) = Unit
-    }
-
     private class FakeTimeProvider : TimeProvider {
         override fun currentTimeMillis(): Long = 0L
         override fun currentDayStartEpochMillis(): Long = 0L
-    }
-
-    private class FakeIntentMediator : IntentMediator {
-        private val mutable = MutableSharedFlow<AppIntent>()
-        override val intents = mutable.asSharedFlow()
-
-        override suspend fun emit(intent: AppIntent) {
-            mutable.emit(intent)
-        }
-    }
-
-    private class FakeWallpaperController : WallpaperController {
-        override suspend fun setNightModeWallpaper() = Unit
-    }
-
-    private class FakeSyncScheduler : SyncScheduler {
-        override fun scheduleDayClosureSync() = Unit
     }
 }

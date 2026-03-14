@@ -46,12 +46,23 @@ class RoomDailyGoalRepositoryTest {
         assertEquals(listOf("First"), dao.savedSubtasks.map { it.title })
     }
 
+    @Test
+    fun toggle_subtask_updates_completion_flag() = runTest {
+        val dao = FakeDailyGoalDao(null)
+        val repository = RoomDailyGoalRepository(dao, FakeTimeProvider())
+
+        repository.toggleSubtask(subtaskId = 7L, isCompleted = true)
+
+        assertEquals(7L to true, dao.updatedCompletion)
+    }
+
     private class FakeDailyGoalDao(
         relation: DailyGoalWithSubtasks?,
     ) : DailyGoalDao {
         private val flow = MutableStateFlow(relation)
         var savedMainTitle: String? = null
         var savedSubtasks: List<GoalSubtaskEntity> = emptyList()
+        var updatedCompletion: Pair<Long, Boolean>? = null
 
         override fun observeGoalForDay(dayStartEpochMillis: Long): Flow<DailyGoalWithSubtasks?> = flow.asStateFlow()
         override suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoalEntity? = null
@@ -59,6 +70,9 @@ class RoomDailyGoalRepositoryTest {
         override suspend fun insertGoal(goal: DailyGoalEntity): Long = 1L
         override suspend fun updateGoal(goal: DailyGoalEntity) = Unit
         override suspend fun insertSubtasks(subtasks: List<GoalSubtaskEntity>) = Unit
+        override suspend fun updateSubtaskCompletion(subtaskId: Long, isCompleted: Boolean) {
+            updatedCompletion = subtaskId to isCompleted
+        }
         override suspend fun deleteSubtasksForGoal(goalId: Long) = Unit
 
         override suspend fun saveGoalWithSubtasks(dayStartEpochMillis: Long, mainTitle: String, subtasks: List<GoalSubtaskEntity>) {

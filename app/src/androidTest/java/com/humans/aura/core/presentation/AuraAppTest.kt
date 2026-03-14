@@ -1,6 +1,7 @@
 package com.humans.aura.core.presentation
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -50,5 +51,29 @@ class AuraAppTest {
 
         composeRule.onNodeWithTag("nav_summary").performClick()
         composeRule.onNodeWithText("Day summary").fetchSemanticsNode()
+    }
+
+    @Test
+    fun app_renders_foundation_pills_and_can_return_to_dashboard() {
+        composeRule.setContent {
+            AuraTheme {
+                AuraApp(
+                    stopwatchSection = { androidx.compose.material3.Text("Stopwatch") },
+                    dailyGoalsSection = { androidx.compose.material3.Text("Daily goals") },
+                    daySummarySection = { androidx.compose.material3.Text("Day summary") },
+                    assistantChatSection = { androidx.compose.material3.Text("Assistant chat") },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Compose").fetchSemanticsNode()
+        composeRule.onNodeWithText("Room").fetchSemanticsNode()
+        composeRule.onNodeWithText("Koin").fetchSemanticsNode()
+
+        composeRule.onNodeWithTag("nav_assistant").performClick()
+        composeRule.onNodeWithTag("nav_dashboard").performClick()
+
+        composeRule.onAllNodesWithText("Day summary").fetchSemanticsNodes()
+        composeRule.onNodeWithText("Stopwatch").fetchSemanticsNode()
     }
 }

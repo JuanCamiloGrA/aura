@@ -8,6 +8,7 @@ fun DailySummaryEntity.toDomain(): DaySummary = DaySummary(
     id = id,
     dayStartEpochMillis = dayStartEpochMillis,
     summaryText = summaryText,
+    reflection = null,
     rawContextJson = rawContextJson,
     promptVersion = promptVersion,
     modelName = modelName,
@@ -18,3 +19,6 @@ fun DailySummaryEntity.toDomain(): DaySummary = DaySummary(
     updatedAtEpochMillis = updatedAtEpochMillis,
     isSyncedToD1 = isSyncedToD1,
 )
+
+fun DailySummaryEntity.toDomain(reflectionParser: DaySummaryReflectionParser): DaySummary =
+    toDomain().copy(reflection = reflectionParser.parse(summaryText))

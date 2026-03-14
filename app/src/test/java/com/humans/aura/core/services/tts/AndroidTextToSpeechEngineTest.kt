@@ -30,7 +30,7 @@ class AndroidTextToSpeechEngineTest {
         val spokenTexts = mutableListOf<String>()
         var stopCalls = 0
 
-        override fun speak(text: String) {
+        override suspend fun speak(text: String) {
             spokenTexts += text
         }
 

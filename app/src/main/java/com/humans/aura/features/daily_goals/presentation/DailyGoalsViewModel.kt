@@ -7,6 +7,7 @@ import com.humans.aura.features.daily_goals.domain.ClearTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayActivitiesUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.SaveTodayGoalUseCase
+import com.humans.aura.features.daily_goals.domain.ToggleGoalSubtaskUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,27 +19,41 @@ class DailyGoalsViewModel(
     observeTodayGoalUseCase: ObserveTodayGoalUseCase,
     observeTodayActivitiesUseCase: ObserveTodayActivitiesUseCase,
     private val saveTodayGoalUseCase: SaveTodayGoalUseCase,
+    private val toggleGoalSubtaskUseCase: ToggleGoalSubtaskUseCase,
     private val clearTodayGoalUseCase: ClearTodayGoalUseCase,
 ) : ViewModel() {
 
     private val mainTitleInput = MutableStateFlow("")
     private val subtaskInputs = MutableStateFlow(listOf("", "", ""))
     private val isSaving = MutableStateFlow(false)
+    private val isTogglingSubtask = MutableStateFlow(false)
+    private val formState = combine(
+        mainTitleInput,
+        subtaskInputs,
+        isSaving,
+        isTogglingSubtask,
+    ) { mainTitle, subtasks, saving, toggling ->
+        GoalFormState(
+            mainTitle = mainTitle,
+            subtasks = subtasks,
+            isSaving = saving,
+            isToggling = toggling,
+        )
+    }
 
     val uiState: StateFlow<DailyGoalsUiState> = combine(
         observeTodayGoalUseCase(),
         observeTodayActivitiesUseCase(),
-        mainTitleInput,
-        subtaskInputs,
-        isSaving,
-    ) { goal, todayActivities, mainTitle, subtasks, saving ->
+        formState,
+    ) { goal, todayActivities, formState ->
         DailyGoalsUiState(
             goal = goal,
-            mainTitleInput = if (mainTitle.isBlank()) goal?.mainTitle.orEmpty() else mainTitle,
-            subtaskInputs = mergeSubtaskInputs(goal, subtasks),
+            mainTitleInput = if (formState.mainTitle.isBlank()) goal?.mainTitle.orEmpty() else formState.mainTitle,
+            subtaskInputs = mergeSubtaskInputs(goal, formState.subtasks),
             todayActivities = todayActivities,
             isLoading = false,
-            isSaving = saving,
+            isSaving = formState.isSaving,
+            isTogglingSubtask = formState.isToggling,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -83,6 +98,19 @@ class DailyGoalsViewModel(
         }
     }
 
+    fun toggleSubtask(subtaskId: Long, isCompleted: Boolean) {
+        if (isTogglingSubtask.value) return
+
+        viewModelScope.launch {
+            isTogglingSubtask.value = true
+            runCatching {
+                toggleGoalSubtaskUseCase(subtaskId, isCompleted)
+            }.also {
+                isTogglingSubtask.value = false
+            }
+        }
+    }
+
     fun clearTodayGoal() {
         viewModelScope.launch {
             clearTodayGoalUseCase()
@@ -102,4 +130,11 @@ class DailyGoalsViewModel(
         val goalInputs = goal?.subtasks?.map { it.title }.orEmpty()
         return if (goalInputs.isEmpty()) listOf("", "", "") else goalInputs + List((3 - goalInputs.size).coerceAtLeast(0)) { "" }
     }
+
+    private data class GoalFormState(
+        val mainTitle: String,
+        val subtasks: List<String>,
+        val isSaving: Boolean,
+        val isToggling: Boolean,
+    )
 }

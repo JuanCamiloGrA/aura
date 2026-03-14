@@ -1,9 +1,13 @@
 package com.humans.aura.features.voice.presentation
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -14,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -31,8 +34,13 @@ fun VoiceCaptureButton(
     onSendTranscript: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = viewModel::onPermissionResult,
+    )
     VoiceCaptureButton(
         uiState = uiState,
+        onRequestPermission = { permissionLauncher.launch(Manifest.permission.RECORD_AUDIO) },
         onStartCapture = viewModel::startCapture,
         onCancelCapture = viewModel::cancelCapture,
         onReleaseCapture = { viewModel.finishCapture(onSendTranscript) },
@@ -42,6 +50,7 @@ fun VoiceCaptureButton(
 @Composable
 fun VoiceCaptureButton(
     uiState: VoiceUiState,
+    onRequestPermission: () -> Unit = {},
     onStartCapture: () -> Unit,
     onCancelCapture: () -> Unit,
     onReleaseCapture: () -> Unit,
@@ -51,12 +60,26 @@ fun VoiceCaptureButton(
             .fillMaxWidth()
             .height(64.dp)
             .background(
-                color = if (uiState.isListening) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+                color = when (uiState.stage) {
+                    VoiceUiStage.Listening,
+                    VoiceUiStage.PartialReady,
+                    -> MaterialTheme.colorScheme.primaryContainer
+
+                    VoiceUiStage.PermissionDenied,
+                    VoiceUiStage.Error,
+                    -> MaterialTheme.colorScheme.errorContainer
+
+                    else -> MaterialTheme.colorScheme.secondaryContainer
+                },
                 shape = RoundedCornerShape(20.dp),
             )
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
+                    if (uiState.stage == VoiceUiStage.PermissionDenied) {
+                        onRequestPermission()
+                        return@awaitEachGesture
+                    }
                     onStartCapture()
                     var cancelled = false
                     var pointer = down.id
@@ -81,17 +104,38 @@ fun VoiceCaptureButton(
             .testTag("voice_capture_button"),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = when {
-                uiState.isCancelled -> "Cancelled"
-                uiState.isListening -> "Release to send or swipe left to cancel"
-                uiState.transcript.isNotBlank() -> "Ready: ${uiState.transcript}"
-                uiState.errorMessage != null -> uiState.errorMessage
-                else -> "Hold to talk"
-            },
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-            fontWeight = FontWeight.SemiBold,
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = when (uiState.stage) {
+                    VoiceUiStage.Cancelled -> "Cancelled"
+                    VoiceUiStage.Listening -> "Release to send or swipe left to cancel"
+                    VoiceUiStage.PartialReady -> "Listening... ${uiState.partialTranscript}"
+                    VoiceUiStage.Transcribing -> "Transcribing..."
+                    VoiceUiStage.Sending -> "Sending..."
+                    VoiceUiStage.Speaking -> "AURA is speaking"
+                    VoiceUiStage.PermissionDenied -> "Enable microphone access"
+                    VoiceUiStage.Error -> uiState.errorMessage ?: "Voice error"
+                    VoiceUiStage.Idle -> if (uiState.transcript.isNotBlank()) "Ready: ${uiState.transcript}" else "Hold to talk"
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                color = when (uiState.stage) {
+                    VoiceUiStage.PermissionDenied,
+                    VoiceUiStage.Error,
+                    -> MaterialTheme.colorScheme.onErrorContainer
+
+                    else -> MaterialTheme.colorScheme.onSecondaryContainer
+                },
+                fontWeight = FontWeight.SemiBold,
+            )
+
+            if (uiState.stage == VoiceUiStage.PermissionDenied) {
+                Text(
+                    text = "Tap again to grant permission",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.testTag("voice_permission_hint"),
+                )
+            }
+        }
     }
 }

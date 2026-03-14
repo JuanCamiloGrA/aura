@@ -12,18 +12,19 @@ import kotlinx.coroutines.flow.map
 class RoomDaySummaryRepository(
     private val daySummaryDao: DaySummaryDao,
     private val timeProvider: TimeProvider,
+    private val reflectionParser: DaySummaryReflectionParser,
 ) : DaySummaryRepository {
 
     override fun observeLatestSummary(): Flow<DaySummary?> =
-        daySummaryDao.observeLatestSummary().map { entity -> entity?.toDomain() }
+        daySummaryDao.observeLatestSummary().map { entity -> entity?.toDomain(reflectionParser) }
 
     override fun observeRecentSummaries(limit: Int): Flow<List<DaySummary>> =
-        daySummaryDao.observeRecentSummaries(limit).map { entities -> entities.map(DailySummaryEntity::toDomain) }
+        daySummaryDao.observeRecentSummaries(limit).map { entities -> entities.map { it.toDomain(reflectionParser) } }
 
     override suspend fun createPendingSummary(dayStartEpochMillis: Long): DaySummary {
         val existing = daySummaryDao.getByDayStart(dayStartEpochMillis)
         if (existing != null) {
-            return existing.toDomain()
+            return existing.toDomain(reflectionParser)
         }
 
         val now = timeProvider.currentTimeMillis()
@@ -42,11 +43,11 @@ class RoomDaySummaryRepository(
                 isSyncedToD1 = false,
             ),
         )
-        return requireNotNull(daySummaryDao.getById(id)).toDomain()
+        return requireNotNull(daySummaryDao.getById(id)).toDomain(reflectionParser)
     }
 
     override suspend fun getPendingSummaries(limit: Int): List<DaySummary> =
-        daySummaryDao.getSummariesByStatus(SummaryGenerationStatus.PENDING.name, limit).map(DailySummaryEntity::toDomain)
+        daySummaryDao.getSummariesByStatus(SummaryGenerationStatus.PENDING.name, limit).map { it.toDomain(reflectionParser) }
 
     override suspend fun updatePendingContext(
         summaryId: Long,

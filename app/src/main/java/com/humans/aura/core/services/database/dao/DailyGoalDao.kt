@@ -32,6 +32,9 @@ interface DailyGoalDao {
     @Insert
     suspend fun insertSubtasks(subtasks: List<GoalSubtaskEntity>)
 
+    @Query("UPDATE goal_subtasks SET is_completed = :isCompleted, is_synced_to_d1 = 0 WHERE id = :subtaskId")
+    suspend fun updateSubtaskCompletion(subtaskId: Long, isCompleted: Boolean)
+
     @Query("DELETE FROM goal_subtasks WHERE goal_id = :goalId")
     suspend fun deleteSubtasksForGoal(goalId: Long)
 

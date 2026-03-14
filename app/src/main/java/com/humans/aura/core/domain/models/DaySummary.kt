@@ -4,6 +4,7 @@ data class DaySummary(
     val id: Long,
     val dayStartEpochMillis: Long,
     val summaryText: String?,
+    val reflection: DaySummaryReflection? = null,
     val rawContextJson: String,
     val promptVersion: String,
     val modelName: String,

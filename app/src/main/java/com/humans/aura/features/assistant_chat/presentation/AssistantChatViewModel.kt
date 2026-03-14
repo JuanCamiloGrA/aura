@@ -2,9 +2,11 @@ package com.humans.aura.features.assistant_chat.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.humans.aura.features.assistant_chat.domain.AssistantReplySpeaker
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,15 +16,18 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AssistantChatViewModel(
     private val ensureChatSessionUseCase: EnsureChatSessionUseCase,
     observeChatMessagesUseCase: ObserveChatMessagesUseCase,
     private val sendChatMessageUseCase: SendChatMessageUseCase,
+    private val assistantReplySpeaker: AssistantReplySpeaker,
 ) : ViewModel() {
 
     private val activeSession = MutableStateFlow<com.humans.aura.core.domain.models.ChatSession?>(null)
     private val draftMessage = MutableStateFlow("")
     private val isSending = MutableStateFlow(false)
+    private val lastErrorMessage = MutableStateFlow<String?>(null)
     private val activeMessages = activeSession.flatMapLatest { session ->
         if (session == null) {
             flowOf(emptyList())
@@ -36,12 +41,14 @@ class AssistantChatViewModel(
         activeMessages,
         draftMessage,
         isSending,
-    ) { session, messages, draft, sending ->
+        lastErrorMessage,
+    ) { session, messages, draft, sending, errorMessage ->
         AssistantChatUiState(
             activeSession = session,
             messages = messages,
             draftMessage = draft,
             isSending = sending,
+            lastErrorMessage = errorMessage,
             isLoading = session == null,
         )
     }.stateIn(
@@ -58,20 +65,28 @@ class AssistantChatViewModel(
 
     fun onDraftChanged(value: String) {
         draftMessage.value = value
+        if (value.isNotBlank()) {
+            lastErrorMessage.value = null
+        }
     }
 
     fun sendMessage(message: String = draftMessage.value) {
         if (message.isBlank() || isSending.value) return
         viewModelScope.launch {
             isSending.value = true
+            lastErrorMessage.value = null
             runCatching {
-                sendChatMessageUseCase(
+                val reply = sendChatMessageUseCase(
                     originalText = message,
                     normalizedEnglishText = message,
                     sourceLanguageCode = "en",
                 )
+                assistantReplySpeaker(reply)
             }.onSuccess {
                 draftMessage.value = ""
+                lastErrorMessage.value = null
+            }.onFailure { error ->
+                lastErrorMessage.value = error.message ?: "Unable to reach AURA right now"
             }.also {
                 isSending.value = false
             }

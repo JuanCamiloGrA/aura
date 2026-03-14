@@ -3,9 +3,9 @@ package com.humans.aura.features.daily_goals.presentation
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -29,6 +29,7 @@ class DailyGoalsSectionTest {
     fun section_renders_goal_inputs_and_callbacks() {
         var saved = 0
         var cleared = 0
+        var toggles = 0
         val subtaskChanges = mutableListOf<Pair<Int, String>>()
 
         composeRule.setContent {
@@ -54,6 +55,7 @@ class DailyGoalsSectionTest {
                         subtaskChanges += index to value
                         subtasks = subtasks.toMutableList().also { it[index] = value }
                     },
+                    onToggleSubtask = { _, _ -> toggles += 1 },
                     onSaveTodayGoal = { saved += 1 },
                     onClearTodayGoal = { cleared += 1 },
                 )
@@ -63,6 +65,7 @@ class DailyGoalsSectionTest {
         composeRule.onNodeWithTag("daily_goal_title_input").performTextInput(" today")
         composeRule.onNodeWithTag("daily_goal_subtask_1").performTextInput("Plan")
         composeRule.onNodeWithTag("save_daily_goal_button").assertIsEnabled().performClick()
+        composeRule.onNodeWithText("Done").performClick()
         composeRule.onNodeWithText("Clear").performClick()
         composeRule.onNodeWithText("Progress: 0/1 subtasks complete").assertIsDisplayed()
         composeRule.onNodeWithText("[ ] Scope").assertIsDisplayed()
@@ -70,7 +73,8 @@ class DailyGoalsSectionTest {
 
         assertEquals(1, saved)
         assertEquals(1, cleared)
-        assertEquals(listOf(1 to "Plan"), subtaskChanges)
+        assertEquals(1, toggles)
+        assertEquals(1 to "Plan", subtaskChanges.first())
     }
 
     @Test
@@ -84,6 +88,7 @@ class DailyGoalsSectionTest {
                     ),
                     onMainTitleChanged = {},
                     onSubtaskChanged = { _, _ -> },
+                    onToggleSubtask = { _, _ -> },
                     onSaveTodayGoal = {},
                     onClearTodayGoal = {},
                 )
@@ -117,6 +122,7 @@ class DailyGoalsSectionTest {
                     ),
                     onMainTitleChanged = {},
                     onSubtaskChanged = { _, _ -> },
+                    onToggleSubtask = { _, _ -> },
                     onSaveTodayGoal = {},
                     onClearTodayGoal = {},
                 )
@@ -127,5 +133,34 @@ class DailyGoalsSectionTest {
         composeRule.onNodeWithText("[x] Factory").assertIsDisplayed()
         composeRule.onNodeWithText("[ ] Coverage").assertIsDisplayed()
         composeRule.onNodeWithText("Review", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun section_disables_subtask_toggle_while_toggling() {
+        composeRule.setContent {
+            AuraTheme {
+                DailyGoalsSection(
+                    uiState = DailyGoalsUiState(
+                        isTogglingSubtask = true,
+                        goal = DailyGoal(
+                            id = 1,
+                            dayStartEpochMillis = 0L,
+                            mainTitle = "Ship milestone",
+                            subtasks = listOf(GoalSubtask(1, 1, "Factory", true, 0, false)),
+                            isSyncedToD1 = false,
+                        ),
+                        mainTitleInput = "Ship milestone",
+                        subtaskInputs = listOf("Factory", "", ""),
+                    ),
+                    onMainTitleChanged = {},
+                    onSubtaskChanged = { _, _ -> },
+                    onToggleSubtask = { _, _ -> },
+                    onSaveTodayGoal = {},
+                    onClearTodayGoal = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Undo").assertIsNotEnabled()
     }
 }

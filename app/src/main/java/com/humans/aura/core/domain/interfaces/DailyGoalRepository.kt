@@ -14,5 +14,7 @@ interface DailyGoalRepository {
         subtasks: List<GoalSubtaskDraft>,
     )
 
+    suspend fun toggleSubtask(subtaskId: Long, isCompleted: Boolean)
+
     suspend fun clearTodayGoal()
 }

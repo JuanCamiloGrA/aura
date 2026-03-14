@@ -45,6 +45,14 @@ val coverageExclusions = listOf(
     "**/TextToSpeechSpeaker$*.class",
     "**/AndroidPlatformTextToSpeechSpeaker.class",
     "**/AndroidPlatformTextToSpeechSpeaker$*.class",
+    "**/core/di/*.class",
+    "**/core/di/*$*.class",
+    "**/AndroidWallpaperController.class",
+    "**/AndroidWallpaperController$*.class",
+    "**/*SectionKt.class",
+    "**/*SectionKt$*.class",
+    "**/*ButtonKt.class",
+    "**/*ButtonKt$*.class",
 )
 
 val kotlinDebugTree = fileTree("$buildDir/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes") {

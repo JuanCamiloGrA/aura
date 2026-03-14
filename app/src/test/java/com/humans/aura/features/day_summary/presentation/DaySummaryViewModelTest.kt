@@ -4,17 +4,20 @@ import app.cash.turbine.test
 import com.humans.aura.MainDispatcherRule
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
 import com.humans.aura.core.domain.models.DaySummary
+import com.humans.aura.core.domain.models.DaySummaryReflection
 import com.humans.aura.core.domain.models.SummaryGenerationStatus
 import com.humans.aura.features.day_summary.domain.ObserveLatestSummaryUseCase
 import com.humans.aura.features.day_summary.domain.ObserveRecentSummariesUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DaySummaryViewModelTest {
 
     @get:Rule
@@ -45,6 +48,11 @@ class DaySummaryViewModelTest {
         id = id,
         dayStartEpochMillis = id * 100L,
         summaryText = text,
+        reflection = if (text == null) null else DaySummaryReflection(
+            wins = listOf("Win"),
+            frictionPoints = listOf("Friction"),
+            tomorrowPivot = "Pivot",
+        ),
         rawContextJson = "{}",
         promptVersion = "v1",
         modelName = "gemini-test",

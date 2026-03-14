@@ -11,25 +11,28 @@ import com.humans.aura.core.domain.models.ChatMessage
 import com.humans.aura.core.domain.models.ChatRole
 import com.humans.aura.core.domain.models.ChatSession
 import com.humans.aura.core.domain.models.DaySummaryContext
-import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
+import com.humans.aura.features.assistant_chat.domain.AssistantReplySpeaker
 import com.humans.aura.features.assistant_chat.domain.BuildChatPromptUseCase
+import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AssistantChatViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun send_message_clears_draft_and_delegates_to_use_case() = runTest {
+    fun send_message_clears_draft_and_speaks_reply() = runTest {
         val repository = FakeChatRepository()
         val sendUseCase = SendChatMessageUseCase(
             chatRepository = repository,
@@ -37,10 +40,12 @@ class AssistantChatViewModelTest {
             buildChatPromptUseCase = BuildChatPromptUseCase(),
             aiTextGenerator = FakeAiTextGenerator(),
         )
+        val speaker = FakeAssistantReplySpeaker()
         val viewModel = AssistantChatViewModel(
             ensureChatSessionUseCase = EnsureChatSessionUseCase(repository),
             observeChatMessagesUseCase = ObserveChatMessagesUseCase(repository),
             sendChatMessageUseCase = sendUseCase,
+            assistantReplySpeaker = speaker,
         )
         advanceUntilIdle()
 
@@ -49,6 +54,7 @@ class AssistantChatViewModelTest {
         advanceUntilIdle()
 
         assertEquals("Plan my afternoon", repository.userMessages.single().originalText)
+        assertEquals(listOf("Sure"), speaker.replies)
         assertEquals("", viewModel.uiState.value.draftMessage)
     }
 
@@ -66,6 +72,7 @@ class AssistantChatViewModelTest {
                 buildChatPromptUseCase = BuildChatPromptUseCase(),
                 aiTextGenerator = FakeAiTextGenerator(),
             ),
+            assistantReplySpeaker = FakeAssistantReplySpeaker(),
         )
         advanceUntilIdle()
 
@@ -78,13 +85,20 @@ class AssistantChatViewModelTest {
         }
     }
 
+    private class FakeAssistantReplySpeaker : AssistantReplySpeaker {
+        val replies = mutableListOf<String>()
+
+        override suspend fun invoke(reply: String) {
+            replies += reply
+        }
+    }
+
     private class FakeChatRepository(
         private val messages: List<ChatMessage> = emptyList(),
     ) : ChatRepository {
         private val session = ChatSession(7, "Daily assistant", 1L, 1L, false)
         private val messagesFlow = MutableStateFlow(messages)
         val userMessages = mutableListOf<ChatMessage>()
-        val assistantMessages = mutableListOf<ChatMessage>()
 
         override fun observeSessions(): Flow<List<ChatSession>> = MutableStateFlow(listOf(session))
         override fun observeMessages(sessionId: Long): Flow<List<ChatMessage>> = messagesFlow
@@ -97,7 +111,6 @@ class AssistantChatViewModelTest {
 
         override suspend fun appendAssistantMessage(sessionId: Long, content: String): ChatMessage {
             return ChatMessage(2, sessionId, ChatRole.ASSISTANT, content, content, "en", 2L, false)
-                .also(assistantMessages::add)
         }
     }
 

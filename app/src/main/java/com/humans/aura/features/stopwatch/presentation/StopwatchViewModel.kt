@@ -2,10 +2,7 @@ package com.humans.aura.features.stopwatch.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.humans.aura.core.domain.interfaces.IntentMediator
 import com.humans.aura.core.domain.models.ActivityStatus
-import com.humans.aura.core.domain.models.AppIntent
-import com.humans.aura.features.day_closure.domain.HandleSleepIntentUseCase
 import com.humans.aura.features.stopwatch.domain.ClearActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
@@ -27,8 +24,6 @@ class StopwatchViewModel(
     private val predictNextActivityTitleUseCase: PredictNextActivityTitleUseCase,
     private val updateCurrentActivityStatusUseCase: UpdateCurrentActivityStatusUseCase,
     private val clearActivitiesUseCase: ClearActivitiesUseCase,
-    intentMediator: IntentMediator,
-    private val handleSleepIntentUseCase: HandleSleepIntentUseCase,
 ) : ViewModel() {
 
     private val draftTitle = MutableStateFlow("")
@@ -65,7 +60,6 @@ class StopwatchViewModel(
 
     init {
         refreshPrediction()
-        observeSleepEvents(intentMediator)
     }
 
     fun onDraftTitleChanged(value: String) {
@@ -120,16 +114,6 @@ class StopwatchViewModel(
     private fun updateStatus(status: ActivityStatus) {
         viewModelScope.launch {
             updateCurrentActivityStatusUseCase(status)
-        }
-    }
-
-    private fun observeSleepEvents(intentMediator: IntentMediator) {
-        viewModelScope.launch {
-            intentMediator.intents.collect { intent ->
-                if (intent is AppIntent.SleepLogged) {
-                    handleSleepIntentUseCase(intent)
-                }
-            }
         }
     }
 

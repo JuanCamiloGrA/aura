@@ -4,6 +4,7 @@ import com.humans.aura.features.daily_goals.domain.ClearTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayActivitiesUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.SaveTodayGoalUseCase
+import com.humans.aura.features.daily_goals.domain.ToggleGoalSubtaskUseCase
 import com.humans.aura.features.day_summary.domain.AssembleDaySummaryContextUseCase
 import com.humans.aura.features.day_summary.domain.BuildDaySummaryPromptUseCase
 import com.humans.aura.features.day_summary.domain.CreatePendingDaySummaryUseCase
@@ -15,6 +16,7 @@ import com.humans.aura.features.assistant_chat.domain.BuildChatPromptUseCase
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatSessionsUseCase
+import com.humans.aura.features.assistant_chat.domain.AssistantReplySpeaker
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
 import com.humans.aura.features.stopwatch.domain.ClearActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
@@ -35,13 +37,14 @@ val useCaseModule = module {
     factory { ClearActivitiesUseCase(get()) }
     factory { ObserveTodayGoalUseCase(get()) }
     factory { ObserveTodayActivitiesUseCase(get(), get()) }
-    factory { SaveTodayGoalUseCase(get()) }
+    factory { SaveTodayGoalUseCase(get(), get()) }
+    factory { ToggleGoalSubtaskUseCase(get()) }
     factory { ClearTodayGoalUseCase(get()) }
     factory { HandleSleepIntentUseCase(get(), get(), get(), get()) }
     factory { CreatePendingDaySummaryUseCase(get(), get()) }
     factory { AssembleDaySummaryContextUseCase(get(), get()) }
     factory { BuildDaySummaryPromptUseCase(get()) }
-    factory { GeneratePendingDaySummariesUseCase(get(), get(), get(), get(), get()) }
+    factory { GeneratePendingDaySummariesUseCase(get(), get(), get(), get(), get(), get()) }
     factory { ObserveLatestSummaryUseCase(get()) }
     factory { ObserveRecentSummariesUseCase(get()) }
     factory { BuildChatPromptUseCase() }
@@ -49,6 +52,11 @@ val useCaseModule = module {
     factory { ObserveChatMessagesUseCase(get()) }
     factory { ObserveChatSessionsUseCase(get()) }
     factory { SendChatMessageUseCase(get(), get(), get(), get()) }
+    factory<AssistantReplySpeaker> {
+        AssistantReplySpeaker { reply ->
+            get<SpeakAssistantReplyUseCase>().invoke(reply)
+        }
+    }
     factory { NormalizeTranscriptToEnglishUseCase(get()) }
     factory { SpeakAssistantReplyUseCase(get()) }
 }

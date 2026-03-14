@@ -1,6 +1,7 @@
 package com.humans.aura.features.day_summary.domain
 
 import com.humans.aura.core.domain.models.DaySummaryContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -9,12 +10,13 @@ class BuildDaySummaryPromptUseCase(
 ) {
     operator fun invoke(context: DaySummaryContext): String = buildString {
         appendLine("Analyze the user's day honestly.")
-        appendLine("Return a concise reflective summary covering wins, misses, goal alignment, and tomorrow guidance.")
+        appendLine("Return JSON with exactly these keys: wins, friction_points, tomorrow_pivot.")
+        appendLine("wins and friction_points must be arrays of short strings. tomorrow_pivot must be one concise string.")
         append(json.encodeToString(DaySummaryContextPayload.from(context)))
     }
 }
 
-@kotlinx.serialization.Serializable
+@Serializable
 private data class DaySummaryContextPayload(
     val dayStartEpochMillis: Long,
     val activityTitles: List<String>,

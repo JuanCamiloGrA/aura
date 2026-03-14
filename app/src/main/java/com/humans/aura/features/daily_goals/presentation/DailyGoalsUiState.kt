@@ -10,4 +10,5 @@ data class DailyGoalsUiState(
     val todayActivities: List<Activity> = emptyList(),
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
+    val isTogglingSubtask: Boolean = false,
 )

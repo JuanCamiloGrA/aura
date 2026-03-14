@@ -12,31 +12,33 @@ class SendChatMessageUseCase(
     private val buildChatPromptUseCase: BuildChatPromptUseCase,
     private val aiTextGenerator: AiTextGenerator,
 ) {
-    open suspend operator fun invoke(
+    suspend operator fun invoke(
         originalText: String,
         normalizedEnglishText: String,
         sourceLanguageCode: String,
-    ) {
+    ): String {
         val session = chatRepository.ensureActiveSession()
         val recentMessages = chatRepository.getRecentMessages(session.id)
-        chatRepository.appendUserMessage(
+        val userMessage = chatRepository.appendUserMessage(
             sessionId = session.id,
             originalText = originalText,
             normalizedEnglishText = normalizedEnglishText,
             sourceLanguageCode = sourceLanguageCode,
         )
 
-        val context = conversationContextRepository.buildChatContext()
-        val prompt = buildChatPromptUseCase(context, recentMessages, normalizedEnglishText)
+        val updatedHistory = (recentMessages + userMessage).takeLast(20)
+        val context = conversationContextRepository.buildChatContext(limit = 7)
+        val prompt = buildChatPromptUseCase(context, updatedHistory, normalizedEnglishText)
         val response = aiTextGenerator.generate(
             AiRequest(
                 task = AiTask.CHAT,
                 systemInstruction = CHAT_SYSTEM_INSTRUCTION,
                 prompt = prompt,
-                conversationHistory = recentMessages,
+                conversationHistory = updatedHistory,
             ),
         )
         chatRepository.appendAssistantMessage(session.id, response.text)
+        return response.text
     }
 
     companion object {
