@@ -21,6 +21,7 @@ import com.humans.aura.core.services.ai.GeminiApiKeyProvider
 import com.humans.aura.core.services.ai.GeminiModelSelector
 import com.humans.aura.core.services.sync.AuraWorkerFactory
 import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
+import com.humans.aura.features.day_summary.data.DaySummaryReflectionParser
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
 import com.humans.aura.core.domain.models.ChatMessage
@@ -53,6 +54,7 @@ class CoreModuleTest {
                     single<ConversationContextRepository> { FakeConversationContextRepository() }
                     single<ChatRepository> { FakeChatRepository() }
                     single { DaySummaryContextJsonEncoder(get()) }
+                    single { DaySummaryReflectionParser(get()) }
                 },
                 coreModule,
                 useCaseModule,

@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.humans.aura.core.domain.models.Activity
@@ -157,5 +158,38 @@ class StopwatchSectionTest {
         composeRule.onNodeWithText("running", substring = true).assertIsDisplayed()
         composeRule.onAllNodesWithTag("use_prediction_button").assertCountEquals(0)
         composeRule.onAllNodesWithText("Refresh suggestion").assertCountEquals(0)
+    }
+
+    @Test
+    fun section_autofilled_prediction_is_ready_to_overwrite() {
+        var draft = "Review"
+
+        composeRule.setContent {
+            AuraTheme {
+                val draftState = remember { mutableStateOf(draft) }
+                StopwatchSection(
+                    uiState = StopwatchUiState(
+                        draftTitle = draftState.value,
+                        prediction = ActivityPrediction("Review", 2, 10L),
+                        isPredictionAutofilled = true,
+                    ),
+                    onDraftTitleChanged = {
+                        draft = it
+                        draftState.value = it
+                    },
+                    onUsePrediction = {},
+                    onRefreshPrediction = {},
+                    onLogNewActivity = {},
+                    onMarkInaccurate = {},
+                    onMarkLost = {},
+                    onClearAll = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("stopwatch_input").performTextReplacement("Write")
+
+        assertEquals("Write", draft)
+        composeRule.onNodeWithText("Suggested now: Review. Start typing to overwrite it.").assertIsDisplayed()
     }
 }

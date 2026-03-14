@@ -15,3 +15,23 @@ data class DaySummary(
     val updatedAtEpochMillis: Long,
     val isSyncedToD1: Boolean,
 )
+
+fun DaySummary.contextSnippet(): String? =
+    reflection?.contextSnippet() ?: summaryText?.trim()?.takeIf { it.isNotEmpty() }
+
+fun DaySummary.previewText(): String? = contextSnippet()
+
+fun DaySummaryReflection.contextSnippet(): String {
+    val parts = buildList {
+        if (wins.isNotEmpty()) {
+            add("Wins: ${wins.joinToString(separator = "; ")}")
+        }
+        if (frictionPoints.isNotEmpty()) {
+            add("Friction: ${frictionPoints.joinToString(separator = "; ")}")
+        }
+        if (tomorrowPivot.isNotBlank()) {
+            add("Tomorrow Pivot: ${tomorrowPivot.trim()}")
+        }
+    }
+    return parts.joinToString(separator = " | ")
+}

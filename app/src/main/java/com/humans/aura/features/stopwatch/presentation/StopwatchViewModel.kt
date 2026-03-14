@@ -28,29 +28,36 @@ class StopwatchViewModel(
 
     private val draftTitle = MutableStateFlow("")
     private val prediction = MutableStateFlow<com.humans.aura.features.stopwatch.domain.ActivityPrediction?>(null)
+    private val isPredictionAutofilled = MutableStateFlow(false)
     private val isLogging = MutableStateFlow(false)
+    private val draftState = combine(
+        draftTitle,
+        prediction,
+        isPredictionAutofilled,
+        isLogging,
+    ) { currentDraftTitle, currentPrediction, predictionAutofilled, logging ->
+        DraftState(
+            draftTitle = currentDraftTitle,
+            prediction = currentPrediction,
+            isPredictionAutofilled = predictionAutofilled,
+            isLogging = logging,
+        )
+    }
 
     val uiState: StateFlow<StopwatchUiState> = combine(
         observeCurrentActivityUseCase(),
         observeRecentActivitiesUseCase(),
-        draftTitle,
-        prediction,
-        isLogging,
-    ) { currentActivity, recentActivities, currentDraftTitle, currentPrediction, logging ->
-        val effectiveDraft = if (currentDraftTitle.isBlank()) {
-            currentPrediction?.title.orEmpty()
-        } else {
-            currentDraftTitle
-        }
-
+        draftState,
+    ) { currentActivity, recentActivities, currentDraftState ->
         StopwatchUiState(
             currentActivity = currentActivity,
             recentActivities = recentActivities,
-            draftTitle = effectiveDraft,
-            prediction = currentPrediction,
+            draftTitle = currentDraftState.draftTitle,
+            prediction = currentDraftState.prediction,
+            isPredictionAutofilled = currentDraftState.isPredictionAutofilled,
             runningDurationLabel = currentActivity?.let(::formatRunningDuration) ?: "00:00:00",
             isLoading = false,
-            isLogging = logging,
+            isLogging = currentDraftState.isLogging,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -64,10 +71,12 @@ class StopwatchViewModel(
 
     fun onDraftTitleChanged(value: String) {
         draftTitle.value = value
+        prediction.value = null
+        isPredictionAutofilled.value = false
     }
 
     fun usePrediction() {
-        draftTitle.value = prediction.value?.title.orEmpty()
+        applyPrediction(prediction.value, forceAutofill = true)
     }
 
     fun logNewActivity() {
@@ -82,6 +91,7 @@ class StopwatchViewModel(
                 logNewActivityUseCase(titleToLog)
             }.onSuccess {
                 draftTitle.value = ""
+                isPredictionAutofilled.value = false
                 refreshPrediction()
             }.also {
                 isLogging.value = false
@@ -102,12 +112,24 @@ class StopwatchViewModel(
             clearActivitiesUseCase()
             draftTitle.value = ""
             prediction.value = null
+            isPredictionAutofilled.value = false
         }
     }
 
     fun refreshPrediction() {
         viewModelScope.launch {
-            prediction.value = predictNextActivityTitleUseCase()
+            applyPrediction(predictNextActivityTitleUseCase())
+        }
+    }
+
+    private fun applyPrediction(
+        nextPrediction: com.humans.aura.features.stopwatch.domain.ActivityPrediction?,
+        forceAutofill: Boolean = false,
+    ) {
+        prediction.value = nextPrediction
+        if (forceAutofill || draftTitle.value.isBlank() || isPredictionAutofilled.value) {
+            draftTitle.value = nextPrediction?.title.orEmpty()
+            isPredictionAutofilled.value = nextPrediction != null
         }
     }
 
@@ -125,4 +147,11 @@ class StopwatchViewModel(
         val seconds = totalSeconds % 60
         return String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
     }
+
+    private data class DraftState(
+        val draftTitle: String,
+        val prediction: com.humans.aura.features.stopwatch.domain.ActivityPrediction?,
+        val isPredictionAutofilled: Boolean,
+        val isLogging: Boolean,
+    )
 }

@@ -56,7 +56,7 @@ class StopwatchViewModelTest {
     }
 
     @Test
-    fun draft_changes_override_prediction_and_use_prediction_restores_it() = runTest {
+    fun draft_changes_override_prediction_and_clears_suggestion() = runTest {
         val activityRepository = FakeActivityRepository(prediction = ActivityPrediction("Review", 2, 100L))
         val viewModel = createViewModel(activityRepository)
         startCollecting(viewModel)
@@ -64,12 +64,27 @@ class StopwatchViewModelTest {
 
         viewModel.onDraftTitleChanged("Write tests")
         advanceUntilIdle()
-        assertEquals("Write tests", viewModel.uiState.value.draftTitle)
 
-        viewModel.usePrediction()
+        assertEquals("Write tests", viewModel.uiState.value.draftTitle)
+        assertNull(viewModel.uiState.value.prediction)
+    }
+
+    @Test
+    fun typing_after_autofill_clears_prediction_and_keeps_free_text() = runTest {
+        val activityRepository = FakeActivityRepository(prediction = ActivityPrediction("Review", 2, 100L))
+        val viewModel = createViewModel(activityRepository)
+        startCollecting(viewModel)
         advanceUntilIdle()
 
         assertEquals("Review", viewModel.uiState.value.draftTitle)
+        assertEquals("Review", viewModel.uiState.value.prediction?.title)
+
+        viewModel.onDraftTitleChanged("Write tests")
+        advanceUntilIdle()
+
+        assertEquals("Write tests", viewModel.uiState.value.draftTitle)
+        assertNull(viewModel.uiState.value.prediction)
+        assertFalse(viewModel.uiState.value.isPredictionAutofilled)
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.humans.aura.features.assistant_chat.domain
 
 import com.humans.aura.core.domain.models.ChatMessage
 import com.humans.aura.core.domain.models.DaySummaryContext
+import com.humans.aura.core.domain.models.contextSnippet
 
 class BuildChatPromptUseCase {
     operator fun invoke(
@@ -14,7 +15,7 @@ class BuildChatPromptUseCase {
         appendLine("Goal: ${context.dailyGoal?.mainTitle ?: "No goal"}")
         appendLine("Focus minutes: ${context.focusMinutes}")
         appendLine("Lost minutes: ${context.lostMinutes}")
-        appendLine("Recent summaries: ${context.recentSummaries.mapNotNull { it.summaryText }.joinToString(" | ")}")
+        appendLine("Recent summaries: ${context.recentSummaries.mapNotNull { it.contextSnippet() }.joinToString(" | ")}")
         appendLine("Conversation history:")
         recentMessages.forEach { message ->
             appendLine("${message.role.name}: ${message.normalizedEnglishText}")

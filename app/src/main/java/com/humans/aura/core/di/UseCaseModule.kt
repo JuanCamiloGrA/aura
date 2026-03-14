@@ -44,7 +44,7 @@ val useCaseModule = module {
     factory { CreatePendingDaySummaryUseCase(get(), get()) }
     factory { AssembleDaySummaryContextUseCase(get(), get()) }
     factory { BuildDaySummaryPromptUseCase(get()) }
-    factory { GeneratePendingDaySummariesUseCase(get(), get(), get(), get(), get(), get()) }
+    factory { GeneratePendingDaySummariesUseCase(get(), get(), get(), get(), get(), get(), get()) }
     factory { ObserveLatestSummaryUseCase(get()) }
     factory { ObserveRecentSummariesUseCase(get()) }
     factory { BuildChatPromptUseCase() }

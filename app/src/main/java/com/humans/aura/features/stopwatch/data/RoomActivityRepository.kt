@@ -84,7 +84,7 @@ class RoomActivityRepository(
     companion object {
         private const val DAY_DURATION_MILLIS = 86_400_000L
         private const val PREDICTION_LOOKBACK_MILLIS = DAY_DURATION_MILLIS * 7
-        private const val PREDICTION_WINDOW_MILLIS = 60 * 60 * 1000L
+        private const val PREDICTION_WINDOW_MILLIS = 30 * 60 * 1000L
         private const val SLEEP_KEYWORD = "Sleep"
     }
 }

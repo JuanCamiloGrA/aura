@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.humans.aura.core.domain.models.DaySummary
 import com.humans.aura.core.domain.models.SummaryGenerationStatus
+import com.humans.aura.core.domain.models.previewText
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -69,7 +70,7 @@ fun DaySummarySection(
                 )
                 uiState.recentSummaries.forEach { summary ->
                     Text(
-                        text = summary.summaryText ?: fallbackStatusText(summary.generationStatus, summary.errorMessage),
+                        text = summary.previewText() ?: fallbackStatusText(summary.generationStatus, summary.errorMessage),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -116,9 +117,10 @@ private fun SummaryStatusCard(summary: DaySummary?) {
             color = textColor,
         )
 
+        val previewText = summary?.previewText()
         val content = when {
             summary == null -> "No AI day summary has been generated yet."
-            !summary.summaryText.isNullOrBlank() && summary.reflection == null -> summary.summaryText
+            !previewText.isNullOrBlank() && summary.reflection == null -> previewText
             else -> fallbackStatusText(summary.generationStatus, summary.errorMessage)
         }
 
@@ -129,7 +131,7 @@ private fun SummaryStatusCard(summary: DaySummary?) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = textColor,
                 modifier = Modifier.testTag(
-                    if (!summary?.summaryText.isNullOrBlank()) "day_summary_latest_text" else "day_summary_empty",
+                    if (!previewText.isNullOrBlank()) "day_summary_latest_text" else "day_summary_empty",
                 ),
             )
         } else {

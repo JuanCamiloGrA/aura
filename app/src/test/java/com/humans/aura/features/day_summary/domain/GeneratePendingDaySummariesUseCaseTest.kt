@@ -29,14 +29,22 @@ class GeneratePendingDaySummariesUseCaseTest {
         val repository = FakeDaySummaryRepository()
         val useCase = createUseCase(
             repository = repository,
-            aiTextGenerator = FakeAiTextGenerator { AiResponse("Strong day overall", "gemini-test") },
+            aiTextGenerator = FakeAiTextGenerator {
+                AiResponse(
+                    """{"wins":["Strong day overall"],"friction_points":["Meetings"],"tomorrow_pivot":"Start earlier."}""",
+                    "gemini-test",
+                )
+            },
         )
 
         val result = useCase()
 
         assertEquals(DaySummarySyncResult.SUCCESS, result)
         assertEquals(1, repository.pendingContextUpdates.size)
-        assertEquals("Strong day overall", repository.completedResults.single().summaryText)
+        assertEquals(
+            "{\"wins\":[\"Strong day overall\"],\"friction_points\":[\"Meetings\"],\"tomorrow_pivot\":\"Start earlier.\"}",
+            repository.completedResults.single().summaryText,
+        )
     }
 
     @Test
@@ -86,7 +94,13 @@ class GeneratePendingDaySummariesUseCaseTest {
             ),
             buildDaySummaryPromptUseCase = BuildDaySummaryPromptUseCase(Json),
             daySummaryContextJsonEncoder = DaySummaryContextJsonEncoder(Json),
-            aiTextGenerator = FakeAiTextGenerator { AiResponse("ok", "gemini-test") },
+            reflectionParser = com.humans.aura.features.day_summary.data.DaySummaryReflectionParser(Json),
+            aiTextGenerator = FakeAiTextGenerator {
+                AiResponse(
+                    """{"wins":["ok"],"friction_points":[],"tomorrow_pivot":"Continue."}""",
+                    "gemini-test",
+                )
+            },
             timeProvider = FakeTimeProvider(),
         )
 
@@ -107,9 +121,27 @@ class GeneratePendingDaySummariesUseCaseTest {
         ),
         buildDaySummaryPromptUseCase = BuildDaySummaryPromptUseCase(Json),
         daySummaryContextJsonEncoder = DaySummaryContextJsonEncoder(Json),
+        reflectionParser = com.humans.aura.features.day_summary.data.DaySummaryReflectionParser(Json),
         aiTextGenerator = aiTextGenerator,
         timeProvider = FakeTimeProvider(),
     )
+
+    @Test
+    fun invoke_marks_non_json_summary_response_as_terminal_failure() = runTest {
+        val repository = FakeDaySummaryRepository()
+        val useCase = createUseCase(
+            repository = repository,
+            aiTextGenerator = FakeAiTextGenerator { AiResponse("Strong day overall", "gemini-test") },
+        )
+
+        val result = useCase()
+
+        assertEquals(DaySummarySyncResult.FAILURE, result)
+        assertEquals(
+            "Gemini response did not match the required summary JSON schema",
+            repository.terminalFailures.single().errorMessage,
+        )
+    }
 
     private fun fakeSummary(
         id: Long = 1L,

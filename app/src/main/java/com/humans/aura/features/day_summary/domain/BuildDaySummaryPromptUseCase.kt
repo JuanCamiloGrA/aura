@@ -1,6 +1,7 @@
 package com.humans.aura.features.day_summary.domain
 
 import com.humans.aura.core.domain.models.DaySummaryContext
+import com.humans.aura.core.domain.models.contextSnippet
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -36,7 +37,7 @@ private data class DaySummaryContextPayload(
             focusMinutes = context.focusMinutes,
             lostMinutes = context.lostMinutes,
             longestActivityTitle = context.longestActivityTitle,
-            previousSummarySnippets = context.recentSummaries.mapNotNull { it.summaryText },
+            previousSummarySnippets = context.recentSummaries.mapNotNull { it.contextSnippet() },
         )
     }
 }

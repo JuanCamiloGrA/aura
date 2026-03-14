@@ -64,4 +64,21 @@ class DailyGoalDaoTest {
         assertEquals("New title", relation?.goal?.mainTitle)
         assertEquals(listOf("Execute"), relation?.subtasks?.map { it.title })
     }
+
+    @Test
+    fun update_subtask_completion_updates_completion_and_sync_flag() = runTest {
+        dao.saveGoalWithSubtasks(
+            dayStartEpochMillis = 0L,
+            mainTitle = "Ship MVP",
+            subtasks = listOf(GoalSubtaskEntity(goalId = 0L, title = "Toggle me", isCompleted = false, position = 0, isSyncedToD1 = true)),
+        )
+
+        val subtaskId = requireNotNull(dao.getGoalWithSubtasksForDay(0L)?.subtasks?.single()?.id)
+
+        dao.updateSubtaskCompletion(subtaskId, true)
+
+        val updatedSubtask = dao.getGoalWithSubtasksForDay(0L)?.subtasks?.single()
+        assertEquals(true, updatedSubtask?.isCompleted)
+        assertEquals(false, updatedSubtask?.isSyncedToD1)
+    }
 }

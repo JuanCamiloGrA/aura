@@ -1,6 +1,7 @@
 package com.humans.aura.features.day_summary.data
 
 import com.humans.aura.core.domain.models.DaySummaryContext
+import com.humans.aura.core.domain.models.contextSnippet
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -56,7 +57,7 @@ private data class DaySummaryContextPayload(
                     RecentSummaryPayload(
                         id = summary.id,
                         dayStartEpochMillis = summary.dayStartEpochMillis,
-                        summaryText = summary.summaryText,
+                        summaryText = summary.contextSnippet(),
                         generationStatus = summary.generationStatus.name,
                     )
                 },

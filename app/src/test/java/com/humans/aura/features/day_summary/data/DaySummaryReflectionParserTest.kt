@@ -31,4 +31,36 @@ class DaySummaryReflectionParserTest {
     fun parse_returns_null_for_plain_text() {
         assertNull(parser.parse("Strong day overall"))
     }
+
+    @Test
+    fun parse_extracts_json_from_markdown_wrapped_response() {
+        val reflection = parser.parse(
+            """
+            Here is the summary:
+            ```json
+            {"wins":["Closed loops"],"friction_points":["Meetings"],"tomorrow_pivot":"Protect the first hour."}
+            ```
+            """.trimIndent(),
+        )
+
+        assertEquals(listOf("Closed loops"), reflection?.wins)
+        assertEquals(listOf("Meetings"), reflection?.frictionPoints)
+        assertEquals("Protect the first hour.", reflection?.tomorrowPivot)
+    }
+
+    @Test
+    fun encode_serializes_structured_reflection_back_to_json() {
+        val encoded = parser.encode(
+            com.humans.aura.core.domain.models.DaySummaryReflection(
+                wins = listOf("Protected focus"),
+                frictionPoints = listOf("Slack"),
+                tomorrowPivot = "Start offline.",
+            ),
+        )
+
+        assertEquals(
+            "{\"wins\":[\"Protected focus\"],\"friction_points\":[\"Slack\"],\"tomorrow_pivot\":\"Start offline.\"}",
+            encoded,
+        )
+    }
 }

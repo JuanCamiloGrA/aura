@@ -19,6 +19,7 @@ import com.humans.aura.core.domain.models.DaySummary
 import com.humans.aura.core.domain.models.DaySummaryContext
 import com.humans.aura.core.domain.models.SummaryGenerationStatus
 import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
+import com.humans.aura.features.day_summary.data.DaySummaryReflectionParser
 import com.humans.aura.features.day_summary.domain.AssembleDaySummaryContextUseCase
 import com.humans.aura.features.day_summary.domain.BuildDaySummaryPromptUseCase
 import com.humans.aura.features.day_summary.domain.GeneratePendingDaySummariesUseCase
@@ -51,7 +52,16 @@ class SyncWorkerTest {
 
     @Test
     fun do_work_returns_success_when_generation_succeeds() = runTest {
-        withTestUseCase(testUseCaseFor(aiBehavior = { AiResponse("summary", "gemini-test") })) {
+        withTestUseCase(
+            testUseCaseFor(
+                aiBehavior = {
+                    AiResponse(
+                        """{"wins":["Protected focus"],"friction_points":["Meetings"],"tomorrow_pivot":"Start earlier."}""",
+                        "gemini-test",
+                    )
+                },
+            ),
+        ) {
             val result = buildWorker().doWork()
 
             assertTrue(result is ListenableWorker.Result.Success)
@@ -106,6 +116,7 @@ class SyncWorkerTest {
         ),
         buildDaySummaryPromptUseCase = BuildDaySummaryPromptUseCase(Json),
         daySummaryContextJsonEncoder = DaySummaryContextJsonEncoder(Json),
+        reflectionParser = DaySummaryReflectionParser(Json),
         aiTextGenerator = object : AiTextGenerator {
             override suspend fun generate(request: AiRequest): AiResponse = aiBehavior(request)
         },

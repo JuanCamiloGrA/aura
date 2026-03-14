@@ -7,6 +7,7 @@ import com.humans.aura.core.domain.models.AiGenerationException
 import com.humans.aura.core.domain.models.AiRequest
 import com.humans.aura.core.domain.models.AiTask
 import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
+import com.humans.aura.features.day_summary.data.DaySummaryReflectionParser
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
 
@@ -15,6 +16,7 @@ class GeneratePendingDaySummariesUseCase(
     private val assembleDaySummaryContextUseCase: AssembleDaySummaryContextUseCase,
     private val buildDaySummaryPromptUseCase: BuildDaySummaryPromptUseCase,
     private val daySummaryContextJsonEncoder: DaySummaryContextJsonEncoder,
+    private val reflectionParser: DaySummaryReflectionParser,
     private val aiTextGenerator: AiTextGenerator,
     private val timeProvider: TimeProvider,
 ) {
@@ -41,18 +43,26 @@ class GeneratePendingDaySummariesUseCase(
             )
 
             runCatching {
-                aiTextGenerator.generate(
+                val response = aiTextGenerator.generate(
                     AiRequest(
                         task = AiTask.DAY_SUMMARY,
                         systemInstruction = SYSTEM_INSTRUCTION,
                         prompt = prompt,
                     ),
                 )
-            }.onSuccess { response ->
+                val reflection = reflectionParser.parse(response.text)
+                    ?: throw AiGenerationException.NonRetryable(
+                        "Gemini response did not match the required summary JSON schema",
+                    )
+                CompletedSummaryResult(
+                    summaryText = reflectionParser.encode(reflection),
+                    modelName = response.modelName,
+                )
+            }.onSuccess { completedSummary ->
                 daySummaryRepository.updateSummaryResult(
                     summaryId = summary.id,
-                    summaryText = response.text,
-                    modelName = response.modelName,
+                    summaryText = completedSummary.summaryText,
+                    modelName = completedSummary.modelName,
                     lastAttemptEpochMillis = now,
                 )
             }.onFailure { error ->
@@ -94,4 +104,9 @@ class GeneratePendingDaySummariesUseCase(
         const val PROMPT_VERSION = "m3-day-summary-v1"
         const val SYSTEM_INSTRUCTION = "You are AURA, an honest but supportive daily reflection assistant."
     }
+
+    private data class CompletedSummaryResult(
+        val summaryText: String,
+        val modelName: String,
+    )
 }

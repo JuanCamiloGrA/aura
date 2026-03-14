@@ -7,7 +7,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
-import android.os.Build
 import com.humans.aura.core.domain.interfaces.WallpaperController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,12 +26,7 @@ class AndroidWallpaperController(
     }
 
     override suspend fun setNightModeWallpaper() {
-        applyBitmapWallpaper(
-            backgroundColor = Color.BLACK,
-            accentColor = Color.WHITE,
-            title = "Sleep",
-            subtitle = "Night mode",
-        )
+        applyLockScreenWallpaper(renderNightWallpaperBitmap())
     }
 
     private suspend fun applyBitmapWallpaper(
@@ -41,7 +35,6 @@ class AndroidWallpaperController(
         title: String,
         subtitle: String,
     ) = withContext(Dispatchers.IO) {
-        val wallpaperManager = wallpaperManagerProvider(context)
         val bitmap = renderWallpaperBitmap(
             backgroundColor = backgroundColor,
             accentColor = accentColor,
@@ -49,11 +42,15 @@ class AndroidWallpaperController(
             subtitle = subtitle,
         )
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK)
-        } else {
-            wallpaperManager.setBitmap(bitmap)
+        applyLockScreenWallpaper(bitmap)
+    }
+
+    private fun applyLockScreenWallpaper(bitmap: Bitmap) {
+        val wallpaperManager = wallpaperManagerProvider(context)
+        if (!wallpaperManager.isWallpaperSupported || !wallpaperManager.isSetWallpaperAllowed) {
+            return
         }
+        wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK)
     }
 
     private fun renderWallpaperBitmap(
@@ -103,5 +100,13 @@ class AndroidWallpaperController(
             }
 
         return bitmap
+    }
+
+    private fun renderNightWallpaperBitmap(): Bitmap {
+        val width = 1080
+        val height = 2400
+        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
+            Canvas(bitmap).drawColor(Color.BLACK)
+        }
     }
 }

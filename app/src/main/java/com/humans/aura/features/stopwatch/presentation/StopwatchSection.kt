@@ -19,12 +19,18 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.humans.aura.core.domain.models.Activity
@@ -63,6 +69,21 @@ fun StopwatchSection(
     onClearAll: () -> Unit,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
+    var draftFieldValue by remember { mutableStateOf(TextFieldValue(uiState.draftTitle)) }
+
+    LaunchedEffect(uiState.draftTitle, uiState.isPredictionAutofilled) {
+        val desiredSelection = if (uiState.isPredictionAutofilled && uiState.draftTitle.isNotBlank()) {
+            TextRange(0, uiState.draftTitle.length)
+        } else {
+            TextRange(uiState.draftTitle.length)
+        }
+        if (draftFieldValue.text != uiState.draftTitle || draftFieldValue.selection != desiredSelection) {
+            draftFieldValue = TextFieldValue(
+                text = uiState.draftTitle,
+                selection = desiredSelection,
+            )
+        }
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -90,13 +111,19 @@ fun StopwatchSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("stopwatch_input"),
-                value = uiState.draftTitle,
-                onValueChange = onDraftTitleChanged,
+                value = draftFieldValue,
+                onValueChange = { value ->
+                    val previousText = draftFieldValue.text
+                    draftFieldValue = value
+                    if (value.text != previousText) {
+                        onDraftTitleChanged(value.text)
+                    }
+                },
                 label = { Text("Next activity") },
                 supportingText = {
                     val prediction = uiState.prediction
                     if (prediction != null) {
-                        Text("Suggested now: ${prediction.title}")
+                        Text("Suggested now: ${prediction.title}. Start typing to overwrite it.")
                     } else {
                         Text("Prediction uses your recent timing pattern.")
                     }
