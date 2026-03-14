@@ -9,13 +9,12 @@ import org.junit.Test
 class DailyGoalEntityMapperTest {
 
     @Test
-    fun relation_to_domain_sorts_subtasks_and_maps_pending_flag() {
+    fun relation_to_domain_sorts_subtasks() {
         val relation = DailyGoalWithSubtasks(
             goal = DailyGoalEntity(
                 id = 1,
                 dayStartEpochMillis = 100L,
                 mainTitle = "Protect focus",
-                isAiGenerationPending = true,
                 isSyncedToD1 = false,
             ),
             subtasks = listOf(
@@ -26,7 +25,6 @@ class DailyGoalEntityMapperTest {
 
         val domain = relation.toDomain()
 
-        assertEquals(true, domain.isAiGenerationPending)
         assertEquals(listOf("First", "Second"), domain.subtasks.map { it.title })
     }
 }

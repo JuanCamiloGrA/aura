@@ -7,12 +7,12 @@ import kotlinx.coroutines.flow.Flow
 interface DailyGoalRepository {
     fun observeTodayGoal(): Flow<DailyGoal?>
 
+    suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoal?
+
     suspend fun saveTodayGoal(
         mainTitle: String,
         subtasks: List<GoalSubtaskDraft>,
     )
-
-    suspend fun markAiGenerationPending()
 
     suspend fun clearTodayGoal()
 }

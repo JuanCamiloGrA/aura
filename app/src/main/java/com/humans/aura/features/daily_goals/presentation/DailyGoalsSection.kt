@@ -132,13 +132,6 @@ private fun GoalSummaryBlock(goal: DailyGoal?) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (goal.isAiGenerationPending) {
-            Text(
-                text = "Night analysis is queued for sync.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
 
         goal.subtasks.forEach { subtask ->
             Text(

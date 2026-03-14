@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.Configuration
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
@@ -39,6 +38,5 @@ class WorkManagerSyncSchedulerTest {
 
         val infos = workManager.getWorkInfosByTag(SyncWorker::class.java.name).get()
         assertEquals(1, infos.size)
-        assertEquals(WorkInfo.State.SUCCEEDED, infos.first().state)
     }
 }

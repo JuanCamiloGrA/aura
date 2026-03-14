@@ -20,7 +20,7 @@ class RoomDailyGoalRepositoryTest {
     fun observe_today_goal_maps_relation() = runTest {
         val dao = FakeDailyGoalDao(
             relation = DailyGoalWithSubtasks(
-                DailyGoalEntity(1, 0L, "Ship MVP", true, false),
+                DailyGoalEntity(1, 0L, "Ship MVP", false),
                 listOf(GoalSubtaskEntity(1, 1, "Scope", false, 0)),
             ),
         )
@@ -55,6 +55,7 @@ class RoomDailyGoalRepositoryTest {
 
         override fun observeGoalForDay(dayStartEpochMillis: Long): Flow<DailyGoalWithSubtasks?> = flow.asStateFlow()
         override suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoalEntity? = null
+        override suspend fun getGoalWithSubtasksForDay(dayStartEpochMillis: Long): DailyGoalWithSubtasks? = flow.value
         override suspend fun insertGoal(goal: DailyGoalEntity): Long = 1L
         override suspend fun updateGoal(goal: DailyGoalEntity) = Unit
         override suspend fun insertSubtasks(subtasks: List<GoalSubtaskEntity>) = Unit
@@ -65,7 +66,6 @@ class RoomDailyGoalRepositoryTest {
             savedSubtasks = subtasks
         }
 
-        override suspend fun markAiGenerationPending(dayStartEpochMillis: Long) = Unit
         override suspend fun deleteGoalForDay(dayStartEpochMillis: Long) = Unit
     }
 

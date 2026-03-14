@@ -1,6 +1,8 @@
 package com.humans.aura.features.stopwatch.presentation
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -25,6 +27,10 @@ class StopwatchSectionTest {
     fun section_renders_primary_controls_and_callbacks() {
         var draft = ""
         var logged = 0
+        var inaccurate = 0
+        var lost = 0
+        var cleared = 0
+        var refreshed = 0
 
         composeRule.setContent {
             AuraTheme {
@@ -45,8 +51,42 @@ class StopwatchSectionTest {
                         draft = "Review"
                         draftState.value = "Review"
                     },
-                    onRefreshPrediction = {},
+                    onRefreshPrediction = { refreshed += 1 },
                     onLogNewActivity = { logged += 1 },
+                    onMarkInaccurate = { inaccurate += 1 },
+                    onMarkLost = { lost += 1 },
+                    onClearAll = { cleared += 1 },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("stopwatch_input").performTextInput("Focus")
+        composeRule.onNodeWithTag("new_activity_button").assertIsEnabled().performClick()
+        composeRule.onNodeWithTag("use_prediction_button").performClick()
+        composeRule.onNodeWithText("Refresh").performClick()
+        composeRule.onNodeWithTag("mark_inaccurate_button").performClick()
+        composeRule.onNodeWithTag("mark_lost_button").performClick()
+        composeRule.onNodeWithText("Clear activity history").performClick()
+        composeRule.onNodeWithText("Status: ACTIVE").assertExists()
+        composeRule.onNodeWithText("Started at", substring = true).assertExists()
+
+        assertEquals(1, logged)
+        assertEquals(1, inaccurate)
+        assertEquals(1, lost)
+        assertEquals(1, cleared)
+        assertEquals(1, refreshed)
+    }
+
+    @Test
+    fun section_renders_empty_state_and_disabled_shortcuts_without_activity() {
+        composeRule.setContent {
+            AuraTheme {
+                StopwatchSection(
+                    uiState = StopwatchUiState(),
+                    onDraftTitleChanged = {},
+                    onUsePrediction = {},
+                    onRefreshPrediction = {},
+                    onLogNewActivity = {},
                     onMarkInaccurate = {},
                     onMarkLost = {},
                     onClearAll = {},
@@ -54,11 +94,35 @@ class StopwatchSectionTest {
             }
         }
 
-        composeRule.onNodeWithTag("stopwatch_input").performTextInput("Focus")
-        composeRule.onNodeWithTag("new_activity_button").assertIsEnabled().performClick()
-        composeRule.onNodeWithTag("use_prediction_button").fetchSemanticsNode()
-        composeRule.onNodeWithText("Honesty shortcuts").fetchSemanticsNode()
+        composeRule.onNodeWithText("No open activity yet. Type a title or accept the suggestion and press New Activity.").assertIsDisplayed()
+        composeRule.onNodeWithText("Your log is empty. The first tap should create the active activity instantly.").assertIsDisplayed()
+        composeRule.onNodeWithText("Prediction is based on the same time window over the last 7 days.").assertIsDisplayed()
+        composeRule.onNodeWithTag("new_activity_button").assertIsNotEnabled()
+        composeRule.onNodeWithTag("mark_inaccurate_button").assertIsNotEnabled()
+        composeRule.onNodeWithTag("mark_lost_button").assertIsNotEnabled()
+    }
 
-        assertEquals(1, logged)
+    @Test
+    fun section_renders_loading_state_and_disables_new_activity_while_logging() {
+        composeRule.setContent {
+            AuraTheme {
+                StopwatchSection(
+                    uiState = StopwatchUiState(
+                        draftTitle = "Focus",
+                        isLoading = true,
+                        isLogging = true,
+                    ),
+                    onDraftTitleChanged = {},
+                    onUsePrediction = {},
+                    onRefreshPrediction = {},
+                    onLogNewActivity = {},
+                    onMarkInaccurate = {},
+                    onMarkLost = {},
+                    onClearAll = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("new_activity_button").assertIsNotEnabled()
     }
 }

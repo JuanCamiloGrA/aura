@@ -5,7 +5,6 @@ data class DailyGoal(
     val dayStartEpochMillis: Long,
     val mainTitle: String,
     val subtasks: List<GoalSubtask>,
-    val isAiGenerationPending: Boolean,
     val isSyncedToD1: Boolean,
 ) {
     val completedSubtasks: Int

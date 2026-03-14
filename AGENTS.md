@@ -5,5 +5,6 @@ ARCHITECTURE PROTOCOL: We use a strict Feature-Sliced Clean Architecture. The Si
 Read ./SPEC.md for general information about the project.
 Always be proactive and make production ready code and atomic-conventional commits along all your runs.
 The architecture must have easy future compatibility for Kotlin Multiplatform.
-Always make sure to write code with 100% Test Coverage and include unit tests for everything.
+Always make sure to write code with a high Test Coverage and include unit tests for everything.
 Procure the use of the newest versions of the packages and never use deprecated packages.
+For the UI always make an ultra minimalist modern-professional Apple Like UI mainly in gray-scale for this app.

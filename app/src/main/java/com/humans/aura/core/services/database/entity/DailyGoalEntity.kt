@@ -16,8 +16,6 @@ data class DailyGoalEntity(
     val dayStartEpochMillis: Long,
     @ColumnInfo(name = "main_title")
     val mainTitle: String,
-    @ColumnInfo(name = "is_ai_generation_pending")
-    val isAiGenerationPending: Boolean = false,
     @ColumnInfo(name = "is_synced_to_d1")
     val isSyncedToD1: Boolean = false,
 )

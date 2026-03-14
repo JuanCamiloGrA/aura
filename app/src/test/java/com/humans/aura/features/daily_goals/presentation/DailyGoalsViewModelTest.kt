@@ -37,7 +37,6 @@ class DailyGoalsViewModelTest {
                 dayStartEpochMillis = 0L,
                 mainTitle = "Protect deep work",
                 subtasks = listOf(GoalSubtask(1, 1, "Focus", false, 0, false)),
-                isAiGenerationPending = false,
                 isSyncedToD1 = false,
             ),
         )
@@ -90,12 +89,13 @@ class DailyGoalsViewModelTest {
 
         override fun observeTodayGoal(): Flow<DailyGoal?> = goalFlow
 
+        override suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoal? = goalFlow.value
+
         override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<GoalSubtaskDraft>) {
             savedMainTitle = mainTitle
             savedSubtasks = subtasks
         }
 
-        override suspend fun markAiGenerationPending() = Unit
         override suspend fun clearTodayGoal() = Unit
     }
 

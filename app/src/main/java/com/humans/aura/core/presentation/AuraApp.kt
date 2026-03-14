@@ -1,6 +1,7 @@
 package com.humans.aura.core.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,22 +13,40 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.humans.aura.features.assistant_chat.presentation.AssistantChatSection
+import com.humans.aura.features.day_summary.presentation.DaySummarySection
 import com.humans.aura.features.daily_goals.presentation.DailyGoalsSection
 import com.humans.aura.features.stopwatch.presentation.StopwatchSection
+
+private enum class AuraDestination {
+    DASHBOARD,
+    CHAT,
+    SUMMARY,
+}
 
 @Composable
 fun AuraApp(
     stopwatchSection: @Composable () -> Unit = { StopwatchSection() },
     dailyGoalsSection: @Composable () -> Unit = { DailyGoalsSection() },
+    daySummarySection: @Composable () -> Unit = { DaySummarySection() },
+    assistantChatSection: @Composable () -> Unit = { AssistantChatSection() },
 ) {
+    var destination by remember { mutableStateOf(AuraDestination.DASHBOARD) }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
@@ -42,8 +61,20 @@ fun AuraApp(
         ) {
             AppHeader()
             FoundationStrip()
-            stopwatchSection()
-            dailyGoalsSection()
+            NavigationStrip(
+                destination = destination,
+                onNavigate = { destination = it },
+            )
+            when (destination) {
+                AuraDestination.DASHBOARD -> {
+                    stopwatchSection()
+                    dailyGoalsSection()
+                    HorizontalDivider()
+                    daySummarySection()
+                }
+                AuraDestination.CHAT -> assistantChatSection()
+                AuraDestination.SUMMARY -> daySummarySection()
+            }
         }
     }
 }
@@ -58,9 +89,63 @@ private fun AppHeader() {
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = "Milestone 1: unstoppable activity logging, local prediction, honest status tracking, and daily goals.",
+            text = "Milestone 2: AI day closure, contextual assistant chat, and voice capture workflows.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun NavigationStrip(
+    destination: AuraDestination,
+    onNavigate: (AuraDestination) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        NavigationPill(
+            text = "Dashboard",
+            selected = destination == AuraDestination.DASHBOARD,
+            testTag = "nav_dashboard",
+        ) { onNavigate(AuraDestination.DASHBOARD) }
+        NavigationPill(
+            text = "Assistant",
+            selected = destination == AuraDestination.CHAT,
+            testTag = "nav_assistant",
+        ) { onNavigate(AuraDestination.CHAT) }
+        NavigationPill(
+            text = "Summary",
+            selected = destination == AuraDestination.SUMMARY,
+            testTag = "nav_summary",
+        ) { onNavigate(AuraDestination.SUMMARY) }
+    }
+}
+
+@Composable
+private fun NavigationPill(
+    text: String,
+    selected: Boolean,
+    testTag: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .wrapContentWidth()
+            .background(
+                color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(999.dp),
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .testTag(testTag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
         )
     }
 }

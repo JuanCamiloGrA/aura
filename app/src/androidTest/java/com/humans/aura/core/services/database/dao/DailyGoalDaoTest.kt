@@ -47,9 +47,21 @@ class DailyGoalDaoTest {
     }
 
     @Test
-    fun mark_ai_generation_pending_sets_flag() = runTest {
-        dao.markAiGenerationPending(0L)
+    fun save_goal_with_subtasks_replaces_existing_goal_title() = runTest {
+        dao.saveGoalWithSubtasks(
+            dayStartEpochMillis = 0L,
+            mainTitle = "Old title",
+            subtasks = listOf(GoalSubtaskEntity(goalId = 0L, title = "Plan", isCompleted = false, position = 0)),
+        )
+        dao.saveGoalWithSubtasks(
+            dayStartEpochMillis = 0L,
+            mainTitle = "New title",
+            subtasks = listOf(GoalSubtaskEntity(goalId = 0L, title = "Execute", isCompleted = true, position = 0)),
+        )
 
-        assertEquals(true, dao.getGoalForDay(0L)?.isAiGenerationPending)
+        val relation = dao.getGoalWithSubtasksForDay(0L)
+
+        assertEquals("New title", relation?.goal?.mainTitle)
+        assertEquals(listOf("Execute"), relation?.subtasks?.map { it.title })
     }
 }

@@ -19,6 +19,9 @@ class RoomDailyGoalRepository(
             relation?.toDomain()
         }
 
+    override suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoal? =
+        dailyGoalDao.getGoalWithSubtasksForDay(dayStartEpochMillis)?.toDomain()
+
     override suspend fun saveTodayGoal(
         mainTitle: String,
         subtasks: List<GoalSubtaskDraft>,
@@ -36,10 +39,6 @@ class RoomDailyGoalRepository(
                 )
             },
         )
-    }
-
-    override suspend fun markAiGenerationPending() {
-        dailyGoalDao.markAiGenerationPending(timeProvider.currentDayStartEpochMillis())
     }
 
     override suspend fun clearTodayGoal() {

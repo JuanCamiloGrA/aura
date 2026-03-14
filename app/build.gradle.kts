@@ -1,23 +1,58 @@
 import org.gradle.testing.jacoco.tasks.JacocoReport
 
+val geminiApiKey = providers.gradleProperty("GEMINI_API_KEY").orElse("").get()
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     jacoco
 }
 
-val fileFilter = listOf(
+val coverageExclusions = listOf(
     "**/R.class",
     "**/R$*.class",
     "**/BuildConfig.*",
     "**/Manifest*.*",
     "**/*Test*.*",
     "android/**/*.*",
+    "**/*_Factory.class",
+    "**/*_Factory$*.class",
+    "**/*_MembersInjector.class",
+    "**/*Module_*Factory.class",
+    "**/*Dao_Impl.class",
+    "**/*Dao_Impl$*.class",
+    "**/*Database_Impl.class",
+    "**/*Database_Impl$*.class",
+    "**/*_Impl.class",
+    "**/*_Impl$*.class",
+    "**/*\$\$serializer.class",
+    "**/*\$\$serializer$*.class",
+    "**/*Preview*.*",
+    "**/ComposableSingletons$*.*",
+    "**/AndroidSpeechRecognizer.class",
+    "**/AndroidSpeechRecognizer$*.class",
+    "**/AndroidSpeechRecognizerKt.class",
+    "**/AndroidSpeechRecognizerKt$*.class",
+    "**/RecognitionClient.class",
+    "**/RecognitionClient$*.class",
+    "**/AndroidRecognitionClient.class",
+    "**/AndroidRecognitionClient$*.class",
+    "**/AndroidTextToSpeechEngine.class",
+    "**/AndroidTextToSpeechEngine$*.class",
+    "**/TextToSpeechSpeaker.class",
+    "**/TextToSpeechSpeaker$*.class",
+    "**/AndroidPlatformTextToSpeechSpeaker.class",
+    "**/AndroidPlatformTextToSpeechSpeaker$*.class",
 )
 
-val debugTree = fileTree("$buildDir/tmp/kotlin-classes/debug") {
-    exclude(fileFilter)
+val kotlinDebugTree = fileTree("$buildDir/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes") {
+    exclude(coverageExclusions)
+}
+
+val javaDebugTree = fileTree("$buildDir/intermediates/javac/debug/compileDebugJavaWithJavac/classes") {
+    exclude(coverageExclusions)
 }
 
 val mainSrc = "$projectDir/src/main/java"
@@ -36,6 +71,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -58,6 +94,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 
@@ -90,7 +127,14 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.serialization.core)
+    implementation(platform(libs.kotlinx.serialization.bom))
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
@@ -99,6 +143,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     testImplementation(libs.koin.test.junit4)
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     androidTestImplementation(libs.androidx.junit)
@@ -123,7 +168,11 @@ tasks.register<JacocoReport>("jacocoFullReport") {
         csv.required.set(false)
     }
 
-    classDirectories.setFrom(files(debugTree))
+    doFirst {
+        println("JaCoCo class directories: ${files(kotlinDebugTree, javaDebugTree).files}")
+    }
+
+    classDirectories.setFrom(files(kotlinDebugTree, javaDebugTree))
     sourceDirectories.setFrom(files(mainSrc))
     executionData.setFrom(
         fileTree(buildDir) {

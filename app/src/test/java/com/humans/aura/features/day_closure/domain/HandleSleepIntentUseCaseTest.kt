@@ -1,8 +1,13 @@
 package com.humans.aura.features.day_closure.domain
 
 import com.humans.aura.core.domain.interfaces.SyncScheduler
+import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.domain.models.AppIntent
+import com.humans.aura.core.domain.models.DaySummary
+import com.humans.aura.core.domain.models.SummaryGenerationStatus
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -11,31 +16,61 @@ class HandleSleepIntentUseCaseTest {
 
     @Test
     fun invoke_sets_wallpaper_and_schedules_sync() = runTest {
-        val dailyGoalRepository = FakeDailyGoalRepository()
+        val daySummaryRepository = FakeDaySummaryRepository()
         val wallpaperController = FakeWallpaperController()
         val syncScheduler = FakeSyncScheduler()
+        val timeProvider = FakeTimeProvider()
 
         HandleSleepIntentUseCase(
-            dailyGoalRepository = dailyGoalRepository,
+            daySummaryRepository = daySummaryRepository,
+            timeProvider = timeProvider,
             wallpaperController = wallpaperController,
             syncScheduler = syncScheduler,
         ).invoke(AppIntent.SleepLogged("Sleep", 1L))
 
-        assertEquals(1, dailyGoalRepository.calls)
+        assertEquals(1, daySummaryRepository.calls)
+        assertEquals(123L, daySummaryRepository.createdDayStart)
         assertEquals(1, wallpaperController.calls)
         assertEquals(1, syncScheduler.calls)
     }
 
-    private class FakeDailyGoalRepository : com.humans.aura.core.domain.interfaces.DailyGoalRepository {
+    private class FakeDaySummaryRepository : com.humans.aura.core.domain.interfaces.DaySummaryRepository {
         var calls = 0
+        var createdDayStart: Long? = null
 
-        override fun observeTodayGoal() = kotlinx.coroutines.flow.emptyFlow<com.humans.aura.core.domain.models.DailyGoal?>()
-        override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<com.humans.aura.core.domain.models.GoalSubtaskDraft>) = Unit
-        override suspend fun markAiGenerationPending() {
+        override fun observeLatestSummary(): Flow<DaySummary?> = emptyFlow()
+
+        override fun observeRecentSummaries(limit: Int): Flow<List<DaySummary>> = emptyFlow()
+
+        override suspend fun createPendingSummary(dayStartEpochMillis: Long): DaySummary {
             calls += 1
+            createdDayStart = dayStartEpochMillis
+            return DaySummary(
+                id = 1L,
+                dayStartEpochMillis = dayStartEpochMillis,
+                summaryText = null,
+                rawContextJson = "{}",
+                promptVersion = "v1",
+                modelName = "pending",
+                generationStatus = SummaryGenerationStatus.PENDING,
+                errorMessage = null,
+                lastAttemptEpochMillis = null,
+                createdAtEpochMillis = dayStartEpochMillis,
+                updatedAtEpochMillis = dayStartEpochMillis,
+                isSyncedToD1 = false,
+            )
         }
 
-        override suspend fun clearTodayGoal() = Unit
+        override suspend fun getPendingSummaries(limit: Int): List<DaySummary> = emptyList()
+        override suspend fun updatePendingContext(summaryId: Long, rawContextJson: String, promptVersion: String, modelName: String, lastAttemptEpochMillis: Long) = Unit
+        override suspend fun updateSummaryResult(summaryId: Long, summaryText: String, modelName: String, lastAttemptEpochMillis: Long) = Unit
+        override suspend fun recordRetryableFailure(summaryId: Long, errorMessage: String, modelName: String, lastAttemptEpochMillis: Long) = Unit
+        override suspend fun recordTerminalFailure(summaryId: Long, errorMessage: String, modelName: String, lastAttemptEpochMillis: Long) = Unit
+    }
+
+    private class FakeTimeProvider : TimeProvider {
+        override fun currentTimeMillis(): Long = 999L
+        override fun currentDayStartEpochMillis(): Long = 123L
     }
 
     private class FakeWallpaperController : WallpaperController {

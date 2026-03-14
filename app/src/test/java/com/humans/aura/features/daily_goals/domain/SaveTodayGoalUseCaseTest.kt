@@ -43,12 +43,13 @@ class SaveTodayGoalUseCaseTest {
 
         override fun observeTodayGoal(): Flow<DailyGoal?> = emptyFlow()
 
+        override suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoal? = null
+
         override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<GoalSubtaskDraft>) {
             this.mainTitle = mainTitle
             this.subtasks = subtasks
         }
 
-        override suspend fun markAiGenerationPending() = Unit
         override suspend fun clearTodayGoal() = Unit
     }
 }

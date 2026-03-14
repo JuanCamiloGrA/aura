@@ -19,6 +19,10 @@ interface DailyGoalDao {
     @Query("SELECT * FROM daily_goals WHERE day_start_epoch_millis = :dayStartEpochMillis LIMIT 1")
     suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoalEntity?
 
+    @Transaction
+    @Query("SELECT * FROM daily_goals WHERE day_start_epoch_millis = :dayStartEpochMillis LIMIT 1")
+    suspend fun getGoalWithSubtasksForDay(dayStartEpochMillis: Long): DailyGoalWithSubtasks?
+
     @Insert
     suspend fun insertGoal(goal: DailyGoalEntity): Long
 
@@ -43,7 +47,6 @@ interface DailyGoalDao {
                 DailyGoalEntity(
                     dayStartEpochMillis = dayStartEpochMillis,
                     mainTitle = mainTitle,
-                    isAiGenerationPending = false,
                     isSyncedToD1 = false,
                 ),
             )
@@ -61,29 +64,6 @@ interface DailyGoalDao {
         if (subtasks.isNotEmpty()) {
             insertSubtasks(subtasks.map { subtask -> subtask.copy(goalId = goalId) })
         }
-    }
-
-    @Transaction
-    suspend fun markAiGenerationPending(dayStartEpochMillis: Long) {
-        val existingGoal = getGoalForDay(dayStartEpochMillis)
-        if (existingGoal == null) {
-            insertGoal(
-                DailyGoalEntity(
-                    dayStartEpochMillis = dayStartEpochMillis,
-                    mainTitle = "",
-                    isAiGenerationPending = true,
-                    isSyncedToD1 = false,
-                ),
-            )
-            return
-        }
-
-        updateGoal(
-            existingGoal.copy(
-                isAiGenerationPending = true,
-                isSyncedToD1 = false,
-            ),
-        )
     }
 
     @Query("DELETE FROM daily_goals WHERE day_start_epoch_millis = :dayStartEpochMillis")
