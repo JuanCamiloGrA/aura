@@ -1,7 +1,6 @@
 package com.humans.aura.core.presentation
 
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -23,6 +22,7 @@ class AuraAppTest {
                     dailyGoalsSection = { androidx.compose.material3.Text("Daily goals") },
                     daySummarySection = { androidx.compose.material3.Text("Day summary") },
                     assistantChatSection = { androidx.compose.material3.Text("Assistant chat") },
+                    configurationSection = { androidx.compose.material3.Text("Configuration page") },
                 )
             }
         }
@@ -41,6 +41,7 @@ class AuraAppTest {
                     dailyGoalsSection = { androidx.compose.material3.Text("Daily goals") },
                     daySummarySection = { androidx.compose.material3.Text("Day summary") },
                     assistantChatSection = { androidx.compose.material3.Text("Assistant chat") },
+                    configurationSection = { androidx.compose.material3.Text("Configuration page") },
                 )
             }
         }
@@ -61,6 +62,7 @@ class AuraAppTest {
                     dailyGoalsSection = { androidx.compose.material3.Text("Daily goals") },
                     daySummarySection = { androidx.compose.material3.Text("Day summary") },
                     assistantChatSection = { androidx.compose.material3.Text("Assistant chat") },
+                    configurationSection = { androidx.compose.material3.Text("Configuration page") },
                 )
             }
         }
@@ -74,5 +76,26 @@ class AuraAppTest {
 
         composeRule.onNodeWithText("Stopwatch").fetchSemanticsNode()
         composeRule.onNodeWithText("Daily goals").fetchSemanticsNode()
+    }
+
+    @Test
+    fun configuration_button_opens_and_closes_configuration_page() {
+        composeRule.setContent {
+            AuraTheme {
+                AuraApp(
+                    stopwatchSection = { androidx.compose.material3.Text("Stopwatch") },
+                    dailyGoalsSection = { androidx.compose.material3.Text("Daily goals") },
+                    daySummarySection = { androidx.compose.material3.Text("Day summary") },
+                    assistantChatSection = { androidx.compose.material3.Text("Assistant chat") },
+                    configurationSection = { androidx.compose.material3.Text("Configuration page") },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("open_configuration_button").performClick()
+        composeRule.onNodeWithText("Configuration page").fetchSemanticsNode()
+
+        composeRule.onNodeWithTag("open_configuration_button").performClick()
+        composeRule.onNodeWithText("Stopwatch").fetchSemanticsNode()
     }
 }

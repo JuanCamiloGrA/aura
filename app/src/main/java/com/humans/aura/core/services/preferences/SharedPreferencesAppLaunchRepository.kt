@@ -2,10 +2,12 @@ package com.humans.aura.core.services.preferences
 
 import android.content.Context
 import com.humans.aura.core.domain.interfaces.AppLaunchRepository
+import com.humans.aura.core.domain.interfaces.AppPreferencesRepository
+import com.humans.aura.core.domain.models.AppPreferencesSnapshot
 
 class SharedPreferencesAppLaunchRepository(
     context: Context,
-) : AppLaunchRepository {
+) : AppLaunchRepository, AppPreferencesRepository {
 
     private val sharedPreferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
@@ -15,6 +17,19 @@ class SharedPreferencesAppLaunchRepository(
     override suspend fun markInitialStopwatchBootstrapCompleted() {
         sharedPreferences.edit()
             .putBoolean(KEY_INITIAL_STOPWATCH_BOOTSTRAPPED, true)
+            .apply()
+    }
+
+    override suspend fun snapshot(): AppPreferencesSnapshot = AppPreferencesSnapshot(
+        hasCompletedInitialStopwatchBootstrap = hasCompletedInitialStopwatchBootstrap(),
+    )
+
+    override suspend fun restore(snapshot: AppPreferencesSnapshot) {
+        sharedPreferences.edit()
+            .putBoolean(
+                KEY_INITIAL_STOPWATCH_BOOTSTRAPPED,
+                snapshot.hasCompletedInitialStopwatchBootstrap,
+            )
             .apply()
     }
 

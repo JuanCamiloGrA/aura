@@ -49,7 +49,7 @@ class VoiceCaptureButtonTest {
         composeRule.setContent {
             AuraTheme {
                 VoiceCaptureButton(
-                    uiState = VoiceUiState(stage = VoiceUiStage.Listening),
+                    uiState = VoiceUiState(stage = VoiceUiStage.Recording),
                     onStartCapture = {},
                     onCancelCapture = {},
                     onReleaseCapture = { releases += 1 },
@@ -73,7 +73,7 @@ class VoiceCaptureButtonTest {
         composeRule.setContent {
             AuraTheme {
                 VoiceCaptureButton(
-                    uiState = VoiceUiState(stage = VoiceUiStage.Listening),
+                    uiState = VoiceUiState(stage = VoiceUiStage.Recording),
                     onStartCapture = {},
                     onCancelCapture = { cancels += 1 },
                     onReleaseCapture = {},
@@ -109,11 +109,11 @@ class VoiceCaptureButtonTest {
     }
 
     @Test
-    fun partial_transcript_state_is_rendered() {
+    fun recording_state_is_rendered() {
         composeRule.setContent {
             AuraTheme {
                 VoiceCaptureButton(
-                    uiState = VoiceUiState(stage = VoiceUiStage.PartialReady, partialTranscript = "hello there"),
+                    uiState = VoiceUiState(stage = VoiceUiStage.Recording),
                     onStartCapture = {},
                     onCancelCapture = {},
                     onReleaseCapture = {},
@@ -121,7 +121,7 @@ class VoiceCaptureButtonTest {
             }
         }
 
-        composeRule.onNodeWithText("Listening... hello there").assertIsDisplayed()
+        composeRule.onNodeWithText("Release to transcribe or swipe left to cancel").assertIsDisplayed()
     }
 
     @Test
@@ -171,7 +171,7 @@ class VoiceCaptureButtonTest {
     }
 
     @Test
-    fun idle_transcript_and_error_states_are_rendered() {
+    fun idle_low_confidence_and_error_states_are_rendered() {
         composeRule.setContent {
             AuraTheme {
                 androidx.compose.foundation.layout.Column {
@@ -179,6 +179,16 @@ class VoiceCaptureButtonTest {
                         uiState = VoiceUiState(
                             stage = VoiceUiStage.Idle,
                             transcript = "Plan the next block",
+                        ),
+                        hasMicrophonePermission = true,
+                        onStartCapture = {},
+                        onCancelCapture = {},
+                        onReleaseCapture = {},
+                    )
+                    VoiceCaptureButton(
+                        uiState = VoiceUiState(
+                            stage = VoiceUiStage.LowConfidence,
+                            errorMessage = "I couldn't catch that clearly. Hold to try again.",
                         ),
                         hasMicrophonePermission = true,
                         onStartCapture = {},
@@ -200,6 +210,7 @@ class VoiceCaptureButtonTest {
         }
 
         composeRule.onNodeWithText("Ready: Plan the next block").assertIsDisplayed()
+        composeRule.onNodeWithText("I couldn't catch that clearly. Hold to try again.").assertIsDisplayed()
         composeRule.onNodeWithText("Mic error").assertIsDisplayed()
         composeRule.onAllNodesWithText("Tap again to grant permission").assertCountEquals(0)
     }

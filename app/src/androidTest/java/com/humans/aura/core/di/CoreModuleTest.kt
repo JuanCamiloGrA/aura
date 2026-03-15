@@ -6,16 +6,19 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.work.WorkManager
 import com.humans.aura.core.coordination.AppIntentCoordinator
 import com.humans.aura.core.domain.interfaces.AiTextGenerator
+import com.humans.aura.core.domain.interfaces.AudioRecorder
+import com.humans.aura.core.domain.interfaces.AudioTranscriber
 import com.humans.aura.core.domain.interfaces.IntentMediator
 import com.humans.aura.core.domain.interfaces.ConversationContextRepository
 import com.humans.aura.core.domain.interfaces.ActivityRepository
+import com.humans.aura.core.domain.interfaces.AppLaunchRepository
+import com.humans.aura.core.domain.interfaces.AppPreferencesRepository
+import com.humans.aura.core.domain.interfaces.BackupDocumentRepository
 import com.humans.aura.core.domain.interfaces.CurrentTimeTicker
 import com.humans.aura.core.domain.interfaces.ChatRepository
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
-import com.humans.aura.core.domain.interfaces.SpeechRecognizer
 import com.humans.aura.core.domain.interfaces.SyncScheduler
-import com.humans.aura.core.domain.interfaces.TextToSpeechEngine
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.services.ai.GeminiApiKeyProvider
@@ -68,18 +71,21 @@ class CoreModuleTest {
                 get<IntentMediator>()
                 get<TimeProvider>()
                 get<CurrentTimeTicker>()
+                get<AppLaunchRepository>()
+                get<AppPreferencesRepository>()
+                get<BackupDocumentRepository>()
                 get<WorkManager>()
                 get<SyncScheduler>()
                 get<WallpaperController>()
                 get<GeminiApiKeyProvider>()
                 get<GeminiModelSelector>()
                 get<AiTextGenerator>()
-                get<TextToSpeechEngine>()
+                get<AudioTranscriber>()
                 get<AppIntentCoordinator>()
                 get<AuraWorkerFactory>()
 
                 InstrumentationRegistry.getInstrumentation().runOnMainSync {
-                    get<SpeechRecognizer>()
+                    get<AudioRecorder>()
                 }
             }
         } finally {

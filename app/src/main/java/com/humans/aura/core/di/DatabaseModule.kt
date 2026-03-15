@@ -2,6 +2,8 @@ package com.humans.aura.core.di
 
 import androidx.room.Room
 import com.humans.aura.core.services.database.AuraDatabase
+import com.humans.aura.features.configuration.data.BackupTransactionRunner
+import com.humans.aura.features.configuration.data.RoomBackupTransactionRunner
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -18,4 +20,5 @@ val databaseModule = module {
     single { get<AuraDatabase>().dailyGoalDao() }
     single { get<AuraDatabase>().daySummaryDao() }
     single { get<AuraDatabase>().chatDao() }
+    single<BackupTransactionRunner> { RoomBackupTransactionRunner(get()) }
 }

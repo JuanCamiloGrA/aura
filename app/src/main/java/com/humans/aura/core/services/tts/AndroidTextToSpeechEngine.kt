@@ -4,12 +4,10 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.humans.aura.core.domain.interfaces.TextToSpeechEngine
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 class AndroidTextToSpeechEngine(
     private val speaker: TextToSpeechSpeaker,
@@ -41,59 +39,60 @@ private class AndroidPlatformTextToSpeechSpeaker(
     context: Context,
     textToSpeechFactory: (Context, TextToSpeech.OnInitListener?) -> TextToSpeech,
 ) : TextToSpeechSpeaker {
-    private val isInitialized = CompletableDeferred<Boolean>()
-    private val textToSpeech = textToSpeechFactory(context, TextToSpeech.OnInitListener { status ->
-        val initialized = status == TextToSpeech.SUCCESS
-        if (!isInitialized.isCompleted) {
-            isInitialized.complete(initialized)
-        }
-    }).apply {
-        language = Locale.ENGLISH
+    private var initialized = false
+    private val textToSpeech: TextToSpeech?
+
+    init {
+        textToSpeech = textToSpeechFactory(context, TextToSpeech.OnInitListener { status ->
+            val initialized = status == TextToSpeech.SUCCESS
+            this.initialized = initialized
+            if (initialized) {
+                textToSpeech?.language = Locale.US
+            }
+        })
     }
 
     override suspend fun speak(text: String) {
+        val engine = textToSpeech ?: throw IllegalStateException("Text to speech is unavailable")
         if (text.isBlank()) return
-        val initialized = isInitialized.await()
-        if (!initialized) return
+        if (!initialized) {
+            throw IllegalStateException("Text to speech is not initialized")
+        }
+        suspendCancellableCoroutine { continuation ->
+            val utteranceId = "aura-tts-${System.nanoTime()}"
+            engine.setOnUtteranceProgressListener(
+                object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) = Unit
 
-        withContext(Dispatchers.Main.immediate) {
-            suspendCancellableCoroutine { continuation ->
-                val utteranceId = "aura-tts-${System.nanoTime()}"
-                textToSpeech.setOnUtteranceProgressListener(
-                    object : UtteranceProgressListener() {
-                        override fun onStart(utteranceId: String?) = Unit
-
-                        override fun onDone(completedUtteranceId: String?) {
-                            if (completedUtteranceId == utteranceId && continuation.isActive) {
-                                continuation.resume(Unit)
-                            }
+                    override fun onDone(utteranceId: String?) {
+                        if (continuation.isActive) {
+                            continuation.resume(Unit)
                         }
+                    }
 
-                        @Deprecated("Deprecated in Java")
-                        override fun onError(completedUtteranceId: String?) {
-                            if (completedUtteranceId == utteranceId && continuation.isActive) {
-                                continuation.resume(Unit)
-                            }
+                    @Deprecated("Deprecated in Java")
+                    override fun onError(utteranceId: String?) {
+                        if (continuation.isActive) {
+                            continuation.resumeWithException(IllegalStateException("Text to speech failed"))
                         }
+                    }
 
-                        override fun onError(completedUtteranceId: String?, errorCode: Int) {
-                            if (completedUtteranceId == utteranceId && continuation.isActive) {
-                                continuation.resume(Unit)
-                            }
+                    override fun onError(utteranceId: String?, errorCode: Int) {
+                        if (continuation.isActive) {
+                            continuation.resumeWithException(IllegalStateException("Text to speech failed: $errorCode"))
                         }
-                    },
-                )
-
-                val result = textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
-                if (result == TextToSpeech.ERROR && continuation.isActive) {
-                    continuation.resume(Unit)
-                }
-                continuation.invokeOnCancellation { textToSpeech.stop() }
+                    }
+                },
+            )
+            val result = engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+            if (result == TextToSpeech.ERROR && continuation.isActive) {
+                continuation.resumeWithException(IllegalStateException("Text to speech failed"))
             }
+            continuation.invokeOnCancellation { engine.stop() }
         }
     }
 
     override fun stop() {
-        textToSpeech.stop()
+        textToSpeech?.stop()
     }
 }

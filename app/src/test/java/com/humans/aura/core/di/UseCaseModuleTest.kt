@@ -2,13 +2,15 @@ package com.humans.aura.core.di
 
 import com.humans.aura.core.domain.interfaces.ActivityRepository
 import com.humans.aura.core.domain.interfaces.AiTextGenerator
+import com.humans.aura.core.domain.interfaces.AudioTranscriber
 import com.humans.aura.core.domain.interfaces.AppLaunchRepository
+import com.humans.aura.core.domain.interfaces.BackupDocumentRepository
+import com.humans.aura.core.domain.interfaces.BackupRepository
 import com.humans.aura.core.domain.interfaces.ChatRepository
 import com.humans.aura.core.domain.interfaces.ConversationContextRepository
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
 import com.humans.aura.core.domain.interfaces.SyncScheduler
-import com.humans.aura.core.domain.interfaces.TextToSpeechEngine
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.domain.models.Activity
@@ -21,11 +23,15 @@ import com.humans.aura.core.domain.models.ChatSession
 import com.humans.aura.core.domain.models.DaySummary
 import com.humans.aura.core.domain.models.DaySummaryContext
 import com.humans.aura.core.domain.models.DailyGoal
+import com.humans.aura.core.domain.models.AuraBackupSummary
 import com.humans.aura.features.assistant_chat.domain.BuildChatPromptUseCase
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatSessionsUseCase
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
+import com.humans.aura.features.configuration.domain.CreateBackupFileNameUseCase
+import com.humans.aura.features.configuration.domain.ExportBackupToDocumentUseCase
+import com.humans.aura.features.configuration.domain.RestoreBackupFromDocumentUseCase
 import com.humans.aura.features.daily_goals.domain.ClearTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayActivitiesUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayGoalUseCase
@@ -48,12 +54,13 @@ import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveRecentActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.PredictNextActivityTitleUseCase
 import com.humans.aura.features.stopwatch.domain.UpdateCurrentActivityStatusUseCase
-import com.humans.aura.features.voice.domain.NormalizeTranscriptToEnglishUseCase
-import com.humans.aura.features.voice.domain.SpeakAssistantReplyUseCase
+import com.humans.aura.features.voice.domain.ShouldAcceptTranscriptionUseCase
+import com.humans.aura.features.voice.domain.TranscribeAudioUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
@@ -68,8 +75,10 @@ class UseCaseModuleTest {
         val fakeDaySummaryRepository = FakeDaySummaryRepository()
         val fakeConversationContextRepository = FakeConversationContextRepository()
         val fakeChatRepository = FakeChatRepository()
+        val fakeBackupRepository = FakeBackupRepository()
+        val fakeBackupDocumentRepository = FakeBackupDocumentRepository()
         val fakeAiTextGenerator = FakeAiTextGenerator()
-        val fakeTextToSpeechEngine = FakeTextToSpeechEngine()
+        val fakeAudioTranscriber = FakeAudioTranscriber()
         val fakeWallpaperController = FakeWallpaperController()
         val fakeTimeProvider = FakeTimeProvider()
         val fakeSyncScheduler = FakeSyncScheduler()
@@ -83,8 +92,10 @@ class UseCaseModuleTest {
                     single<DaySummaryRepository> { fakeDaySummaryRepository }
                     single<ConversationContextRepository> { fakeConversationContextRepository }
                     single<ChatRepository> { fakeChatRepository }
+                    single<BackupRepository> { fakeBackupRepository }
+                    single<BackupDocumentRepository> { fakeBackupDocumentRepository }
                     single<AiTextGenerator> { fakeAiTextGenerator }
-                    single<TextToSpeechEngine> { fakeTextToSpeechEngine }
+                    single<AudioTranscriber> { fakeAudioTranscriber }
                     single<WallpaperController> { fakeWallpaperController }
                     single<TimeProvider> { fakeTimeProvider }
                     single<SyncScheduler> { fakeSyncScheduler }
@@ -114,6 +125,9 @@ class UseCaseModuleTest {
                 get<SaveTodayGoalUseCase>()
                 get<ToggleGoalSubtaskUseCase>()
                 get<ClearTodayGoalUseCase>()
+                get<CreateBackupFileNameUseCase>()
+                get<ExportBackupToDocumentUseCase>()
+                get<RestoreBackupFromDocumentUseCase>()
                 get<HandleSleepIntentUseCase>()
                 get<CreatePendingDaySummaryUseCase>()
                 get<AssembleDaySummaryContextUseCase>()
@@ -126,10 +140,9 @@ class UseCaseModuleTest {
                 get<ObserveChatMessagesUseCase>()
                 get<ObserveChatSessionsUseCase>()
                 get<SendChatMessageUseCase>()
-                get<NormalizeTranscriptToEnglishUseCase>()
-                get<SpeakAssistantReplyUseCase>()
+                get<TranscribeAudioUseCase>()
+                get<ShouldAcceptTranscriptionUseCase>()
             }
-
         } finally {
             app.close()
         }
@@ -188,18 +201,25 @@ class UseCaseModuleTest {
             ChatMessage(2, sessionId, ChatRole.ASSISTANT, content, content, "en", 2L, false)
     }
 
+    private class FakeBackupRepository : BackupRepository {
+        override suspend fun exportBackup(exportedAtEpochMillis: Long): ByteArray = byteArrayOf()
+
+        override suspend fun restoreBackup(bytes: ByteArray): AuraBackupSummary = AuraBackupSummary(0L, 0, 0, 0, 0, 0, 0)
+    }
+
+    private class FakeBackupDocumentRepository : BackupDocumentRepository {
+        override suspend fun write(documentId: String, bytes: ByteArray) = Unit
+
+        override suspend fun read(documentId: String): ByteArray = byteArrayOf()
+    }
+
     private class FakeAiTextGenerator : AiTextGenerator {
         override suspend fun generate(request: AiRequest): AiResponse = AiResponse(text = request.prompt, modelName = "fake")
     }
 
-    private class FakeTextToSpeechEngine : TextToSpeechEngine {
-        val spokenTexts = mutableListOf<String>()
-
-        override suspend fun speak(text: String) {
-            spokenTexts += text
-        }
-
-        override fun stop() = Unit
+    private class FakeAudioTranscriber : AudioTranscriber {
+        override suspend fun transcribe(audio: com.humans.aura.core.domain.models.RecordedAudio): com.humans.aura.core.domain.models.AudioTranscription =
+            com.humans.aura.core.domain.models.AudioTranscription("transcribed", 100)
     }
 
     private class FakeWallpaperController : WallpaperController {

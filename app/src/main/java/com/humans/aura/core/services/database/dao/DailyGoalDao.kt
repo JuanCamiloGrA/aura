@@ -2,6 +2,7 @@ package com.humans.aura.core.services.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
@@ -19,12 +20,21 @@ interface DailyGoalDao {
     @Query("SELECT * FROM daily_goals WHERE day_start_epoch_millis = :dayStartEpochMillis LIMIT 1")
     suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoalEntity?
 
+    @Query("SELECT * FROM daily_goals ORDER BY day_start_epoch_millis ASC")
+    suspend fun getAllGoals(): List<DailyGoalEntity>
+
+    @Query("SELECT * FROM goal_subtasks ORDER BY goal_id ASC, position ASC, id ASC")
+    suspend fun getAllSubtasks(): List<GoalSubtaskEntity>
+
     @Transaction
     @Query("SELECT * FROM daily_goals WHERE day_start_epoch_millis = :dayStartEpochMillis LIMIT 1")
     suspend fun getGoalWithSubtasksForDay(dayStartEpochMillis: Long): DailyGoalWithSubtasks?
 
     @Insert
     suspend fun insertGoal(goal: DailyGoalEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertGoals(goals: List<DailyGoalEntity>)
 
     @Update
     suspend fun updateGoal(goal: DailyGoalEntity)
@@ -71,4 +81,7 @@ interface DailyGoalDao {
 
     @Query("DELETE FROM daily_goals WHERE day_start_epoch_millis = :dayStartEpochMillis")
     suspend fun deleteGoalForDay(dayStartEpochMillis: Long)
+
+    @Query("DELETE FROM daily_goals")
+    suspend fun deleteAllGoals()
 }

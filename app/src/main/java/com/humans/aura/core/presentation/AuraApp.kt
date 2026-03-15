@@ -28,10 +28,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +45,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Settings
 import com.humans.aura.features.assistant_chat.presentation.AssistantChatSection
+import com.humans.aura.features.configuration.presentation.ConfigurationSection
 import com.humans.aura.features.daily_goals.presentation.DailyGoalsSection
 import com.humans.aura.features.day_summary.presentation.DaySummarySection
 import com.humans.aura.features.stopwatch.presentation.StopwatchSection
@@ -60,21 +66,30 @@ fun AuraApp(
     dailyGoalsSection: @Composable () -> Unit = { DailyGoalsSection() },
     daySummarySection: @Composable () -> Unit = { DaySummarySection() },
     assistantChatSection: @Composable () -> Unit = { AssistantChatSection() },
+    configurationSection: @Composable () -> Unit = { ConfigurationSection() },
 ) {
     var destination by remember { mutableStateOf(AuraDestination.DASHBOARD) }
+    var isConfigurationOpen by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { AuraTopBar() },
-        bottomBar = {
-            AuraBottomBar(
-                destination = destination,
-                onNavigate = { destination = it },
+        topBar = {
+            AuraTopBar(
+                isConfigurationOpen = isConfigurationOpen,
+                onConfigurationClick = { isConfigurationOpen = !isConfigurationOpen },
             )
+        },
+        bottomBar = {
+            if (!isConfigurationOpen) {
+                AuraBottomBar(
+                    destination = destination,
+                    onNavigate = { destination = it },
+                )
+            }
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { contentPadding ->
         AnimatedContent(
-            targetState = destination,
+            targetState = isConfigurationOpen to destination,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding),
@@ -84,8 +99,22 @@ fun AuraApp(
             },
             label = "tab_transition",
         ) { target ->
-            when (target) {
-                AuraDestination.DASHBOARD -> {
+            val (configurationOpen, selectedDestination) = target
+            when {
+                configurationOpen -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        configurationSection()
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+
+                selectedDestination == AuraDestination.DASHBOARD -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -103,13 +132,13 @@ fun AuraApp(
                     }
                 }
 
-                AuraDestination.CHAT -> {
+                selectedDestination == AuraDestination.CHAT -> {
                     Box(modifier = Modifier.fillMaxSize()) {
                         assistantChatSection()
                     }
                 }
 
-                AuraDestination.SUMMARY -> {
+                else -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -129,22 +158,46 @@ fun AuraApp(
 // ── Top Bar ─────────────────────────────────────────────────────────────────
 
 @Composable
-private fun AuraTopBar() {
+private fun AuraTopBar(
+    isConfigurationOpen: Boolean,
+    onConfigurationClick: () -> Unit,
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        Text(
-            text = "AURA",
+        Row(
             modifier = Modifier
                 .windowInsetsPadding(WindowInsets.statusBars)
+                .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(top = 20.dp, bottom = 12.dp),
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 6.sp,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "AURA",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 6.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            TextButton(
+                onClick = onConfigurationClick,
+                modifier = Modifier.testTag("open_configuration_button"),
+            ) {
+                Icon(
+                    imageVector = if (isConfigurationOpen) {
+                        Icons.Outlined.Close
+                    } else {
+                        Icons.Outlined.Settings
+                    },
+                    contentDescription = if (isConfigurationOpen) "Close configuration" else "Open configuration",
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
     }
 }
 

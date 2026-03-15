@@ -2,6 +2,7 @@ package com.humans.aura.core.services.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.humans.aura.core.services.database.entity.summary.DailySummaryEntity
@@ -27,9 +28,18 @@ interface DaySummaryDao {
     @Query("SELECT * FROM daily_summaries WHERE day_start_epoch_millis = :dayStartEpochMillis LIMIT 1")
     suspend fun getByDayStart(dayStartEpochMillis: Long): DailySummaryEntity?
 
+    @Query("SELECT * FROM daily_summaries ORDER BY day_start_epoch_millis ASC")
+    suspend fun getAllSummaries(): List<DailySummaryEntity>
+
     @Insert
     suspend fun insert(summary: DailySummaryEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(summaries: List<DailySummaryEntity>)
+
     @Update
     suspend fun update(summary: DailySummaryEntity)
+
+    @Query("DELETE FROM daily_summaries")
+    suspend fun deleteAllSummaries()
 }

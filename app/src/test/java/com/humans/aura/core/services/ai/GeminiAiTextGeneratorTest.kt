@@ -115,6 +115,7 @@ class GeminiAiTextGeneratorTest {
 
         assertEquals("gemini-flash-latest", selector.modelFor(AiTask.DAY_SUMMARY))
         assertEquals("gemini-flash-latest", selector.modelFor(AiTask.CHAT))
+        assertEquals("gemini-flash-lite-latest", selector.modelFor(AiTask.AUDIO_TRANSCRIPTION))
         assertEquals("gemini-flash-lite-latest", selector.modelFor(AiTask.TRANSLATION))
     }
 

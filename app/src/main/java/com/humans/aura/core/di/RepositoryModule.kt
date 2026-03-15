@@ -1,10 +1,13 @@
 package com.humans.aura.core.di
 
 import com.humans.aura.core.domain.interfaces.ActivityRepository
+import com.humans.aura.core.domain.interfaces.BackupRepository
 import com.humans.aura.core.domain.interfaces.ChatRepository
 import com.humans.aura.core.domain.interfaces.ConversationContextRepository
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
+import com.humans.aura.features.configuration.data.AuraBackupArchiveCodec
+import com.humans.aura.features.configuration.data.ZipBackupRepository
 import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
 import com.humans.aura.features.day_summary.data.DaySummaryReflectionParser
 import com.humans.aura.features.assistant_chat.data.RoomChatRepository
@@ -22,4 +25,6 @@ val repositoryModule = module {
     single { DaySummaryContextJsonEncoder(get()) }
     single<ConversationContextRepository> { RoomConversationContextRepository(get(), get(), get(), get()) }
     single<ChatRepository> { RoomChatRepository(get(), get()) }
+    single { AuraBackupArchiveCodec(get()) }
+    single<BackupRepository> { ZipBackupRepository(get(), get(), get(), get(), get(), get(), get()) }
 }

@@ -1,19 +1,22 @@
 package com.humans.aura.features.voice.presentation
 
 import com.humans.aura.MainDispatcherRule
-import com.humans.aura.core.domain.interfaces.AiTextGenerator
-import com.humans.aura.core.domain.interfaces.SpeechRecognizer
-import com.humans.aura.core.domain.models.AiRequest
-import com.humans.aura.core.domain.models.AiResponse
+import com.humans.aura.core.domain.interfaces.AudioRecorder
+import com.humans.aura.core.domain.interfaces.AudioTranscriber
+import com.humans.aura.core.domain.models.AiGenerationException
+import com.humans.aura.core.domain.models.AudioTranscription
+import com.humans.aura.core.domain.models.RecordedAudio
 import com.humans.aura.core.domain.models.VoiceCaptureState
-import com.humans.aura.features.voice.domain.NormalizeTranscriptToEnglishUseCase
+import com.humans.aura.features.voice.domain.ShouldAcceptTranscriptionUseCase
+import com.humans.aura.features.voice.domain.TranscribeAudioUseCase
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 
@@ -24,83 +27,115 @@ class VoiceViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun start_capture_sets_listening_and_calls_recognizer() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
+    fun start_capture_sets_recording_and_calls_recorder() = runTest {
+        val recorder = FakeAudioRecorder()
+        val viewModel = createViewModel(recorder = recorder)
         advanceUntilIdle()
 
         viewModel.startCapture()
 
-        assertEquals(1, recognizer.startCalls)
-        assertEquals(VoiceUiStage.Listening, viewModel.uiState.value.stage)
+        assertEquals(1, recorder.startCalls)
+        assertEquals(VoiceUiStage.Recording, viewModel.uiState.value.stage)
     }
 
     @Test
-    fun cancel_capture_marks_cancelled_and_calls_recognizer() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
+    fun cancel_capture_marks_cancelled_and_calls_recorder() = runTest {
+        val recorder = FakeAudioRecorder()
+        val viewModel = createViewModel(recorder = recorder)
         advanceUntilIdle()
 
         viewModel.cancelCapture()
 
-        assertEquals(1, recognizer.cancelCalls)
+        assertEquals(1, recorder.cancelCalls)
         assertEquals(VoiceUiStage.Cancelled, viewModel.uiState.value.stage)
     }
 
     @Test
-    fun partial_transcript_keeps_preview_without_sending() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
-        advanceUntilIdle()
-
-        recognizer.emit(VoiceCaptureState.TranscriptReady("hola", "es", isPartial = true))
-        advanceUntilIdle()
-
-        assertEquals(VoiceUiStage.PartialReady, viewModel.uiState.value.stage)
-        assertEquals("hola", viewModel.uiState.value.partialTranscript)
-    }
-
-    @Test
-    fun final_transcript_normalizes_and_emits_callback() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val ai = FakeAiTextGenerator(response = AiResponse("hello", "gemini-test"))
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(ai))
+    fun finish_capture_transcribes_and_emits_callback() = runTest {
+        val audio = RecordedAudio("clip.m4a", "audio/mp4", "clip.m4a")
+        val recorder = FakeAudioRecorder(stopResult = audio)
+        val transcriber = FakeAudioTranscriber(response = AudioTranscription("Go out for lunch", 95))
+        val viewModel = createViewModel(recorder = recorder, transcriber = transcriber)
         var sentTranscript: String? = null
         advanceUntilIdle()
 
-        recognizer.emit(VoiceCaptureState.TranscriptReady("hola", "es"))
-        advanceUntilIdle()
         viewModel.finishCapture { sentTranscript = it }
         advanceUntilIdle()
 
-        assertEquals(1, recognizer.stopCalls)
+        assertEquals(1, recorder.stopCalls)
+        assertEquals(audio, transcriber.receivedAudio)
+        assertEquals("Go out for lunch", sentTranscript)
         assertEquals(VoiceUiStage.Idle, viewModel.uiState.value.stage)
-        assertEquals("hello", sentTranscript)
     }
 
     @Test
-    fun finish_capture_without_final_transcript_shows_error() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val ai = FakeAiTextGenerator()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(ai))
-        recognizer.emit(VoiceCaptureState.TranscriptReady("hola", "es", isPartial = true))
+    fun finish_capture_without_recording_shows_error() = runTest {
+        val recorder = FakeAudioRecorder(stopResult = null)
+        val transcriber = FakeAudioTranscriber()
+        val viewModel = createViewModel(recorder = recorder, transcriber = transcriber)
         advanceUntilIdle()
 
         viewModel.finishCapture()
         advanceUntilIdle()
 
-        assertEquals(1, recognizer.stopCalls)
         assertEquals(VoiceUiStage.Error, viewModel.uiState.value.stage)
-        assertEquals(0, ai.requests.size)
+        assertEquals("No recording captured", viewModel.uiState.value.errorMessage)
+        assertNull(transcriber.receivedAudio)
+    }
+
+    @Test
+    fun low_confidence_transcription_does_not_send_callback() = runTest {
+        val audio = RecordedAudio("clip.m4a", "audio/mp4", "clip.m4a")
+        val recorder = FakeAudioRecorder(stopResult = audio)
+        val transcriber = FakeAudioTranscriber(response = AudioTranscription("Maybe lunch", 42))
+        val viewModel = createViewModel(recorder = recorder, transcriber = transcriber)
+        var sentTranscript: String? = null
+        advanceUntilIdle()
+
+        viewModel.finishCapture { sentTranscript = it }
+        advanceUntilIdle()
+
+        assertEquals(VoiceUiStage.LowConfidence, viewModel.uiState.value.stage)
+        assertEquals(42, viewModel.uiState.value.confidence)
+        assertEquals(null, sentTranscript)
+    }
+
+    @Test
+    fun retryable_transcription_error_maps_to_friendly_error() = runTest {
+        val audio = RecordedAudio("clip.m4a", "audio/mp4", "clip.m4a")
+        val recorder = FakeAudioRecorder(stopResult = audio)
+        val transcriber = FakeAudioTranscriber(error = AiGenerationException.Retryable("offline"))
+        val viewModel = createViewModel(recorder = recorder, transcriber = transcriber)
+        advanceUntilIdle()
+
+        viewModel.finishCapture()
+        advanceUntilIdle()
+
+        assertEquals(VoiceUiStage.Error, viewModel.uiState.value.stage)
+        assertEquals("Connection issue while transcribing. Hold to try again.", viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun recording_state_clears_previous_error() = runTest {
+        val recorder = FakeAudioRecorder()
+        val viewModel = createViewModel(recorder = recorder)
+        advanceUntilIdle()
+
+        recorder.emit(VoiceCaptureState.Error("temporary error"))
+        recorder.emit(VoiceCaptureState.Recording)
+        advanceUntilIdle()
+
+        assertEquals(VoiceUiStage.Recording, viewModel.uiState.value.stage)
+        assertEquals(null, viewModel.uiState.value.errorMessage)
     }
 
     @Test
     fun permission_denial_maps_to_permission_state() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
+        val recorder = FakeAudioRecorder()
+        val viewModel = createViewModel(recorder = recorder)
         advanceUntilIdle()
 
-        recognizer.emit(VoiceCaptureState.Error("Microphone permission denied"))
+        recorder.emit(VoiceCaptureState.Error("Microphone permission denied"))
         advanceUntilIdle()
 
         assertEquals(VoiceUiStage.PermissionDenied, viewModel.uiState.value.stage)
@@ -109,8 +144,7 @@ class VoiceViewModelTest {
 
     @Test
     fun speaking_state_can_be_toggled() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.setSpeaking(true)
@@ -121,9 +155,27 @@ class VoiceViewModelTest {
     }
 
     @Test
+    fun start_capture_cancels_existing_finish_job() = runTest {
+        val audio = RecordedAudio("clip.m4a", "audio/mp4", "clip.m4a")
+        val recorder = FakeAudioRecorder(stopResult = audio)
+        val transcriber = FakeAudioTranscriber(
+            response = AudioTranscription("Go out for lunch", 95),
+            delayResponse = true,
+        )
+        val viewModel = createViewModel(recorder = recorder, transcriber = transcriber)
+        advanceUntilIdle()
+
+        viewModel.finishCapture()
+        viewModel.startCapture()
+        transcriber.release()
+        advanceUntilIdle()
+
+        assertEquals(VoiceUiStage.Recording, viewModel.uiState.value.stage)
+    }
+
+    @Test
     fun granted_permission_resets_to_idle() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.onPermissionResult(true)
@@ -133,8 +185,7 @@ class VoiceViewModelTest {
 
     @Test
     fun denied_permission_sets_permission_denied_state() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.onPermissionResult(false)
@@ -142,118 +193,34 @@ class VoiceViewModelTest {
         assertEquals(VoiceUiStage.PermissionDenied, viewModel.uiState.value.stage)
     }
 
-    @Test
-    fun idle_capture_state_resets_to_idle_when_not_cancelled() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
-        advanceUntilIdle()
+    private fun createViewModel(
+        recorder: FakeAudioRecorder = FakeAudioRecorder(),
+        transcriber: FakeAudioTranscriber = FakeAudioTranscriber(),
+    ): VoiceViewModel = VoiceViewModel(
+        audioRecorder = recorder,
+        transcribeAudioUseCase = TranscribeAudioUseCase(transcriber),
+        shouldAcceptTranscriptionUseCase = ShouldAcceptTranscriptionUseCase(),
+    )
 
-        recognizer.emit(VoiceCaptureState.Listening)
-        recognizer.emit(VoiceCaptureState.Idle)
-        advanceUntilIdle()
-
-        assertEquals(VoiceUiStage.Idle, viewModel.uiState.value.stage)
-    }
-
-    @Test
-    fun listening_state_clears_previous_error() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
-        advanceUntilIdle()
-
-        recognizer.emit(VoiceCaptureState.Error("temporary error"))
-        recognizer.emit(VoiceCaptureState.Listening)
-        advanceUntilIdle()
-
-        assertEquals(VoiceUiStage.Listening, viewModel.uiState.value.stage)
-        assertEquals(null, viewModel.uiState.value.errorMessage)
-    }
-
-    @Test
-    fun final_transcript_updates_detected_language() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
-        advanceUntilIdle()
-
-        recognizer.emit(VoiceCaptureState.TranscriptReady("hola", "es"))
-        advanceUntilIdle()
-
-        assertEquals("es", viewModel.uiState.value.detectedLanguageCode)
-    }
-
-    @Test
-    fun non_permission_error_maps_to_error_stage() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
-        advanceUntilIdle()
-
-        recognizer.emit(VoiceCaptureState.Error("Speech recognition network unavailable"))
-        advanceUntilIdle()
-
-        assertEquals(VoiceUiStage.Error, viewModel.uiState.value.stage)
-    }
-
-    @Test
-    fun start_capture_cancels_existing_finish_job() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val ai = FakeAiTextGenerator(response = AiResponse("translated", "gemini-test"), delayResponse = true)
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(ai))
-        recognizer.emit(VoiceCaptureState.TranscriptReady("hola", "es"))
-        advanceUntilIdle()
-
-        viewModel.finishCapture()
-        viewModel.startCapture()
-        ai.release()
-        advanceUntilIdle()
-
-        assertEquals(VoiceUiStage.Listening, viewModel.uiState.value.stage)
-    }
-
-    @Test
-    fun cancel_capture_cancels_existing_finish_job() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val ai = FakeAiTextGenerator(response = AiResponse("translated", "gemini-test"), delayResponse = true)
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(ai))
-        recognizer.emit(VoiceCaptureState.TranscriptReady("hola", "es"))
-        advanceUntilIdle()
-
-        viewModel.finishCapture()
-        viewModel.cancelCapture()
-        ai.release()
-        advanceUntilIdle()
-
-        assertEquals(VoiceUiStage.Cancelled, viewModel.uiState.value.stage)
-    }
-
-    @Test
-    fun finish_capture_default_callback_path_succeeds() = runTest {
-        val recognizer = FakeSpeechRecognizer()
-        val viewModel = VoiceViewModel(recognizer, NormalizeTranscriptToEnglishUseCase(FakeAiTextGenerator()))
-        recognizer.emit(VoiceCaptureState.TranscriptReady("hola", "es"))
-        advanceUntilIdle()
-
-        viewModel.finishCapture()
-        advanceUntilIdle()
-
-        assertEquals(VoiceUiStage.Idle, viewModel.uiState.value.stage)
-    }
-
-    private class FakeSpeechRecognizer : SpeechRecognizer {
+    private class FakeAudioRecorder(
+        private val stopResult: RecordedAudio? = null,
+    ) : AudioRecorder {
         private val state = MutableStateFlow<VoiceCaptureState>(VoiceCaptureState.Idle)
         override val captureState: Flow<VoiceCaptureState> = state
         var startCalls = 0
         var stopCalls = 0
         var cancelCalls = 0
 
-        override fun startListening() {
+        override fun startRecording() {
             startCalls += 1
         }
 
-        override fun stopListening() {
+        override fun stopRecording(): RecordedAudio? {
             stopCalls += 1
+            return stopResult
         }
 
-        override fun cancelListening() {
+        override fun cancelRecording() {
             cancelCalls += 1
         }
 
@@ -262,18 +229,20 @@ class VoiceViewModelTest {
         }
     }
 
-    private class FakeAiTextGenerator(
-        private val response: AiResponse = AiResponse("translated", "gemini-test"),
+    private class FakeAudioTranscriber(
+        private val response: AudioTranscription = AudioTranscription("translated", 100),
+        private val error: Throwable? = null,
         private val delayResponse: Boolean = false,
-    ) : AiTextGenerator {
-        val requests = mutableListOf<AiRequest>()
+    ) : AudioTranscriber {
+        var receivedAudio: RecordedAudio? = null
         private val gate = CompletableDeferred<Unit>().apply {
             if (!delayResponse) complete(Unit)
         }
 
-        override suspend fun generate(request: AiRequest): AiResponse {
-            requests += request
+        override suspend fun transcribe(audio: RecordedAudio): AudioTranscription {
+            receivedAudio = audio
             gate.await()
+            error?.let { throw it }
             return response
         }
 

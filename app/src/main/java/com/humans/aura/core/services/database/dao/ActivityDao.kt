@@ -2,6 +2,7 @@ package com.humans.aura.core.services.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.humans.aura.core.services.database.ActivityPredictionEntity
@@ -34,6 +35,9 @@ interface ActivityDao {
 
     @Query("SELECT * FROM activities WHERE id = :id LIMIT 1")
     suspend fun getById(id: Long): ActivityEntity?
+
+    @Query("SELECT * FROM activities ORDER BY start_time_epoch_millis ASC")
+    suspend fun getAllActivities(): List<ActivityEntity>
 
     @Query(
         "UPDATE activities SET end_time_epoch_millis = :timestampEpochMillis, status = CASE WHEN status = 'ACTIVE' THEN 'ACCURATE' ELSE status END, is_synced_to_d1 = 0 WHERE end_time_epoch_millis IS NULL",
@@ -73,6 +77,9 @@ interface ActivityDao {
     )
     suspend fun updateCurrentActivityStatus(status: String): Int
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(activities: List<ActivityEntity>)
+
+    @Query("DELETE FROM activities")
+    suspend fun deleteAllActivities()
 }

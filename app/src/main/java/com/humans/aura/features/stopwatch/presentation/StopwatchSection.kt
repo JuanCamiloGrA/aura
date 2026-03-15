@@ -56,9 +56,9 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun StopwatchSection(
     viewModel: StopwatchViewModel = koinViewModel(),
-    voiceCaptureButton: @Composable ((String) -> Unit) -> Unit = { onSend ->
+    voiceCaptureButton: @Composable ((String) -> Unit) -> Unit = { onTranscribed ->
         VoiceCaptureButton(
-            onSendTranscript = onSend,
+            onSendTranscript = onTranscribed,
             idleLabel = "HOLD TO TALK FOR NEW ACTIVITY",
         )
     },

@@ -66,8 +66,11 @@ class RoomDailyGoalRepositoryTest {
 
         override fun observeGoalForDay(dayStartEpochMillis: Long): Flow<DailyGoalWithSubtasks?> = flow.asStateFlow()
         override suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoalEntity? = null
+        override suspend fun getAllGoals(): List<DailyGoalEntity> = emptyList()
+        override suspend fun getAllSubtasks(): List<GoalSubtaskEntity> = emptyList()
         override suspend fun getGoalWithSubtasksForDay(dayStartEpochMillis: Long): DailyGoalWithSubtasks? = flow.value
         override suspend fun insertGoal(goal: DailyGoalEntity): Long = 1L
+        override suspend fun insertGoals(goals: List<DailyGoalEntity>) = Unit
         override suspend fun updateGoal(goal: DailyGoalEntity) = Unit
         override suspend fun insertSubtasks(subtasks: List<GoalSubtaskEntity>) = Unit
         override suspend fun updateSubtaskCompletion(subtaskId: Long, isCompleted: Boolean) {
@@ -81,6 +84,7 @@ class RoomDailyGoalRepositoryTest {
         }
 
         override suspend fun deleteGoalForDay(dayStartEpochMillis: Long) = Unit
+        override suspend fun deleteAllGoals() = Unit
     }
 
     private class FakeTimeProvider : TimeProvider {

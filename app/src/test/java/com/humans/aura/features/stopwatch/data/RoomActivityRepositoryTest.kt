@@ -100,6 +100,7 @@ class RoomActivityRepositoryTest {
         override fun observeActivitiesForDay(dayStartEpochMillis: Long, dayEndEpochMillis: Long): Flow<List<ActivityEntity>> = dayFlow.asStateFlow()
         override suspend fun insert(activity: ActivityEntity): Long = inserted?.id ?: 1L
         override suspend fun getById(id: Long): ActivityEntity? = inserted
+        override suspend fun getAllActivities(): List<ActivityEntity> = emptyList()
         override suspend fun closeOpenActivities(timestampEpochMillis: Long): Int = 1
         override suspend fun findPrediction(historyStartEpochMillis: Long, currentEpochMillis: Long, dayDurationMillis: Long, timeOfDayEpochMillis: Long, windowMillis: Long): ActivityPredictionEntity? = prediction
 
@@ -109,6 +110,7 @@ class RoomActivityRepositoryTest {
         }
 
         override suspend fun insertAll(activities: List<ActivityEntity>) = Unit
+        override suspend fun deleteAllActivities() = Unit
     }
 
     private class FakeTimeProvider : TimeProvider {

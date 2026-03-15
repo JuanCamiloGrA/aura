@@ -7,9 +7,8 @@ import org.junit.Test
 class VoiceUiStateExtensionsTest {
 
     @Test
-    fun is_listening_is_true_for_listening_and_partial_states() {
-        assertTrue(VoiceUiState(stage = VoiceUiStage.Listening).isListening)
-        assertTrue(VoiceUiState(stage = VoiceUiStage.PartialReady).isListening)
+    fun is_listening_is_true_for_recording_state() {
+        assertTrue(VoiceUiState(stage = VoiceUiStage.Recording).isListening)
         assertFalse(VoiceUiState(stage = VoiceUiStage.Idle).isListening)
     }
 

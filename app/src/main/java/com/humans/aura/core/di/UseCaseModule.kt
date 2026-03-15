@@ -5,6 +5,9 @@ import com.humans.aura.features.daily_goals.domain.ObserveTodayActivitiesUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.SaveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ToggleGoalSubtaskUseCase
+import com.humans.aura.features.configuration.domain.CreateBackupFileNameUseCase
+import com.humans.aura.features.configuration.domain.ExportBackupToDocumentUseCase
+import com.humans.aura.features.configuration.domain.RestoreBackupFromDocumentUseCase
 import com.humans.aura.features.day_summary.domain.AssembleDaySummaryContextUseCase
 import com.humans.aura.features.day_summary.domain.BuildDaySummaryPromptUseCase
 import com.humans.aura.features.day_summary.domain.CreatePendingDaySummaryUseCase
@@ -23,8 +26,9 @@ import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveRecentActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.PredictNextActivityTitleUseCase
 import com.humans.aura.features.stopwatch.domain.UpdateCurrentActivityStatusUseCase
-import com.humans.aura.features.voice.domain.NormalizeTranscriptToEnglishUseCase
+import com.humans.aura.features.voice.domain.ShouldAcceptTranscriptionUseCase
 import com.humans.aura.features.voice.domain.SpeakAssistantReplyUseCase
+import com.humans.aura.features.voice.domain.TranscribeAudioUseCase
 import org.koin.dsl.module
 
 val useCaseModule = module {
@@ -39,6 +43,9 @@ val useCaseModule = module {
     factory { SaveTodayGoalUseCase(get(), get()) }
     factory { ToggleGoalSubtaskUseCase(get()) }
     factory { ClearTodayGoalUseCase(get()) }
+    factory { CreateBackupFileNameUseCase(get()) }
+    factory { ExportBackupToDocumentUseCase(get(), get(), get()) }
+    factory { RestoreBackupFromDocumentUseCase(get(), get()) }
     factory { HandleSleepIntentUseCase(get(), get(), get(), get()) }
     factory { CreatePendingDaySummaryUseCase(get(), get()) }
     factory { AssembleDaySummaryContextUseCase(get(), get()) }
@@ -51,6 +58,7 @@ val useCaseModule = module {
     factory { ObserveChatMessagesUseCase(get()) }
     factory { ObserveChatSessionsUseCase(get()) }
     factory { SendChatMessageUseCase(get(), get(), get(), get()) }
-    factory { NormalizeTranscriptToEnglishUseCase(get()) }
+    factory { TranscribeAudioUseCase(get()) }
+    factory { ShouldAcceptTranscriptionUseCase() }
     factory { SpeakAssistantReplyUseCase(get()) }
 }

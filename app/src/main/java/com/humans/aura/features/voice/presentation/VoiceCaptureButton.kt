@@ -77,9 +77,9 @@ fun VoiceCaptureButton(
     onReleaseCapture: () -> Unit,
 ) {
     val needsPermission = !hasMicrophonePermission
-    val isActive = uiState.stage == VoiceUiStage.Listening ||
-        uiState.stage == VoiceUiStage.PartialReady
+    val isActive = uiState.stage == VoiceUiStage.Recording
     val isError = uiState.stage == VoiceUiStage.PermissionDenied ||
+        uiState.stage == VoiceUiStage.LowConfidence ||
         uiState.stage == VoiceUiStage.Error
 
     Box(
@@ -129,11 +129,11 @@ fun VoiceCaptureButton(
             Text(
                 text = when (uiState.stage) {
                     VoiceUiStage.Cancelled -> "Cancelled"
-                    VoiceUiStage.Listening -> "Release to send or swipe left to cancel"
-                    VoiceUiStage.PartialReady -> "Listening... ${uiState.partialTranscript}"
+                    VoiceUiStage.Recording -> "Release to transcribe or swipe left to cancel"
                     VoiceUiStage.Transcribing -> "Transcribing..."
                     VoiceUiStage.Sending -> "Sending..."
                     VoiceUiStage.Speaking -> "AURA is speaking"
+                    VoiceUiStage.LowConfidence -> uiState.errorMessage ?: "That was hard to catch"
                     VoiceUiStage.PermissionDenied -> "Enable microphone access"
                     VoiceUiStage.Error -> uiState.errorMessage ?: "Voice error"
                     VoiceUiStage.Idle -> if (uiState.transcript.isNotBlank()) {

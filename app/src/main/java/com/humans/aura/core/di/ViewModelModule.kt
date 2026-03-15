@@ -1,6 +1,7 @@
 package com.humans.aura.core.di
 
 import com.humans.aura.features.assistant_chat.presentation.AssistantChatViewModel
+import com.humans.aura.features.configuration.presentation.ConfigurationViewModel
 import com.humans.aura.features.day_summary.presentation.DaySummaryViewModel
 import com.humans.aura.features.daily_goals.presentation.DailyGoalsViewModel
 import com.humans.aura.features.stopwatch.presentation.StopwatchViewModel
@@ -13,5 +14,6 @@ val viewModelModule = module {
     viewModelOf(::DailyGoalsViewModel)
     viewModelOf(::DaySummaryViewModel)
     viewModelOf(::AssistantChatViewModel)
+    viewModelOf(::ConfigurationViewModel)
     viewModelOf(::VoiceViewModel)
 }

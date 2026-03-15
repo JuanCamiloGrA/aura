@@ -2,9 +2,11 @@ package com.humans.aura.features.voice.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.humans.aura.core.domain.interfaces.SpeechRecognizer
+import com.humans.aura.core.domain.interfaces.AudioRecorder
+import com.humans.aura.core.domain.models.AiGenerationException
 import com.humans.aura.core.domain.models.VoiceCaptureState
-import com.humans.aura.features.voice.domain.NormalizeTranscriptToEnglishUseCase
+import com.humans.aura.features.voice.domain.ShouldAcceptTranscriptionUseCase
+import com.humans.aura.features.voice.domain.TranscribeAudioUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,68 +14,83 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class VoiceViewModel(
-    private val speechRecognizer: SpeechRecognizer,
-    private val normalizeTranscriptToEnglishUseCase: NormalizeTranscriptToEnglishUseCase,
+    private val audioRecorder: AudioRecorder,
+    private val transcribeAudioUseCase: TranscribeAudioUseCase,
+    private val shouldAcceptTranscriptionUseCase: ShouldAcceptTranscriptionUseCase,
 ) : ViewModel() {
 
     private val mutableUiState = MutableStateFlow(VoiceUiState())
     val uiState: StateFlow<VoiceUiState> = mutableUiState.asStateFlow()
 
-    private var pendingFinalTranscript: String? = null
-    private var pendingLanguageCode: String = "en"
     private var finishCaptureJob: Job? = null
 
     init {
         viewModelScope.launch {
-            speechRecognizer.captureState.collect(::handleCaptureState)
+            audioRecorder.captureState.collect(::handleCaptureState)
         }
     }
 
     fun startCapture() {
         finishCaptureJob?.cancel()
-        pendingFinalTranscript = null
-        pendingLanguageCode = "en"
-        mutableUiState.value = VoiceUiState(stage = VoiceUiStage.Listening)
-        speechRecognizer.startListening()
+        mutableUiState.value = VoiceUiState(stage = VoiceUiStage.Recording)
+        audioRecorder.startRecording()
     }
 
     fun cancelCapture() {
         finishCaptureJob?.cancel()
-        speechRecognizer.cancelListening()
-        pendingFinalTranscript = null
+        audioRecorder.cancelRecording()
         mutableUiState.value = VoiceUiState(stage = VoiceUiStage.Cancelled)
     }
 
     fun finishCapture(onTranscriptReady: (String) -> Unit = {}) {
-        speechRecognizer.stopListening()
+        val capturedAudio = audioRecorder.stopRecording()
         finishCaptureJob?.cancel()
         finishCaptureJob = viewModelScope.launch {
-            val finalTranscript = pendingFinalTranscript?.takeIf { it.isNotBlank() }
-            if (finalTranscript == null) {
+            if (capturedAudio == null) {
                 mutableUiState.value = mutableUiState.value.copy(
                     stage = VoiceUiStage.Error,
-                    errorMessage = "No final transcript captured",
+                    errorMessage = "No recording captured",
                 )
                 return@launch
             }
 
             mutableUiState.value = mutableUiState.value.copy(
                 stage = VoiceUiStage.Transcribing,
-                transcript = finalTranscript,
-                partialTranscript = "",
+                confidence = null,
                 errorMessage = null,
             )
 
-            val normalized = normalizeTranscriptToEnglishUseCase(finalTranscript)
-            mutableUiState.value = mutableUiState.value.copy(
-                stage = VoiceUiStage.Sending,
-                transcript = normalized,
-                partialTranscript = "",
-                errorMessage = null,
-            )
-            onTranscriptReady(normalized)
-            mutableUiState.value = mutableUiState.value.copy(stage = VoiceUiStage.Idle)
-            pendingFinalTranscript = null
+            runCatching {
+                transcribeAudioUseCase(capturedAudio)
+            }.onSuccess { transcription ->
+                if (!shouldAcceptTranscriptionUseCase(transcription)) {
+                    mutableUiState.value = mutableUiState.value.copy(
+                        stage = VoiceUiStage.LowConfidence,
+                        transcript = transcription.transcription,
+                        confidence = transcription.confidence,
+                        errorMessage = "I couldn't catch that clearly. Hold to try again.",
+                    )
+                    return@onSuccess
+                }
+
+                mutableUiState.value = mutableUiState.value.copy(
+                    stage = VoiceUiStage.Sending,
+                    transcript = transcription.transcription,
+                    confidence = transcription.confidence,
+                    errorMessage = null,
+                )
+                onTranscriptReady(transcription.transcription)
+                mutableUiState.value = mutableUiState.value.copy(stage = VoiceUiStage.Idle)
+            }.onFailure { error ->
+                mutableUiState.value = mutableUiState.value.copy(
+                    stage = if (error.message?.contains("permission", ignoreCase = true) == true) {
+                        VoiceUiStage.PermissionDenied
+                    } else {
+                        VoiceUiStage.Error
+                    },
+                    errorMessage = error.userFacingMessage(),
+                )
+            }
         }
     }
 
@@ -100,31 +117,10 @@ class VoiceViewModel(
                 stage = if (mutableUiState.value.stage == VoiceUiStage.Cancelled) VoiceUiStage.Cancelled else VoiceUiStage.Idle,
             )
 
-            VoiceCaptureState.Listening -> mutableUiState.value.copy(
-                stage = VoiceUiStage.Listening,
+            VoiceCaptureState.Recording -> mutableUiState.value.copy(
+                stage = VoiceUiStage.Recording,
                 errorMessage = null,
             )
-
-            is VoiceCaptureState.TranscriptReady -> {
-                pendingLanguageCode = state.detectedLanguageCode
-                if (state.isPartial) {
-                    mutableUiState.value.copy(
-                        stage = VoiceUiStage.PartialReady,
-                        partialTranscript = state.transcript,
-                        detectedLanguageCode = state.detectedLanguageCode,
-                        errorMessage = null,
-                    )
-                } else {
-                    pendingFinalTranscript = state.transcript
-                    mutableUiState.value.copy(
-                        stage = VoiceUiStage.Listening,
-                        transcript = state.transcript,
-                        partialTranscript = "",
-                        detectedLanguageCode = state.detectedLanguageCode,
-                        errorMessage = null,
-                    )
-                }
-            }
 
             is VoiceCaptureState.Error -> {
                 val stage = if (state.message.contains("permission", ignoreCase = true)) {
@@ -138,5 +134,10 @@ class VoiceViewModel(
                 )
             }
         }
+    }
+
+    private fun Throwable.userFacingMessage(): String = when (this) {
+        is AiGenerationException.Retryable -> "Connection issue while transcribing. Hold to try again."
+        else -> message ?: "We couldn't transcribe that recording. Hold to try again."
     }
 }

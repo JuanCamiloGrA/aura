@@ -102,35 +102,46 @@ class GeminiModelSelector {
         com.humans.aura.core.domain.models.AiTask.DAY_SUMMARY,
         com.humans.aura.core.domain.models.AiTask.CHAT,
         -> "gemini-flash-latest"
+        com.humans.aura.core.domain.models.AiTask.AUDIO_TRANSCRIPTION,
         com.humans.aura.core.domain.models.AiTask.TRANSLATION,
         -> "gemini-flash-lite-latest"
     }
 }
 
 @Serializable
-private data class GeminiGenerateContentRequest(
+internal data class GeminiGenerateContentRequest(
     @SerialName("system_instruction")
     val systemInstruction: GeminiContent,
     val contents: List<GeminiContent>,
 )
 
 @Serializable
-private data class GeminiGenerateContentResponse(
+internal data class GeminiGenerateContentResponse(
     val candidates: List<GeminiCandidate> = emptyList(),
 )
 
 @Serializable
-private data class GeminiCandidate(
+internal data class GeminiCandidate(
     val content: GeminiContent,
 )
 
 @Serializable
-private data class GeminiContent(
+internal data class GeminiContent(
     val role: String? = null,
     val parts: List<GeminiPart>,
 )
 
 @Serializable
-private data class GeminiPart(
-    val text: String,
+internal data class GeminiPart(
+    val text: String? = null,
+    @SerialName("file_data")
+    val fileData: GeminiFileData? = null,
+)
+
+@Serializable
+internal data class GeminiFileData(
+    @SerialName("file_uri")
+    val fileUri: String,
+    @SerialName("mime_type")
+    val mimeType: String,
 )

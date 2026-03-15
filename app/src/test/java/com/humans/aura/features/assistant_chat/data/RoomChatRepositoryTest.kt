@@ -120,10 +120,16 @@ class RoomChatRepositoryTest {
 
         override suspend fun getLatestSession(): ChatSessionEntity? = latestSession
 
+        override suspend fun getAllSessions(): List<ChatSessionEntity> = sessionsFlow.value
+
+        override suspend fun getAllMessages(): List<ChatMessageEntity> = messages.values.flatten()
+
         override suspend fun insertSession(session: ChatSessionEntity): Long {
             insertSessionCalls += 1
             return 1L
         }
+
+        override suspend fun insertSessions(sessions: List<ChatSessionEntity>) = Unit
 
         override suspend fun insertMessage(message: ChatMessageEntity): Long {
             insertMessageCalls += 1
@@ -133,9 +139,13 @@ class RoomChatRepositoryTest {
             return id
         }
 
+        override suspend fun insertMessages(messages: List<ChatMessageEntity>) = Unit
+
         override suspend fun updateSessionTimestamp(sessionId: Long, updatedAtEpochMillis: Long) {
             updatedSessions += sessionId to updatedAtEpochMillis
         }
+
+        override suspend fun deleteAllSessions() = Unit
     }
 
     private class FakeTimeProvider(

@@ -172,6 +172,8 @@ class RoomDaySummaryRepositoryTest {
 
         override suspend fun getByDayStart(dayStartEpochMillis: Long): DailySummaryEntity? = byDayStart[dayStartEpochMillis]
 
+        override suspend fun getAllSummaries(): List<DailySummaryEntity> = recentFlow.value
+
         override suspend fun insert(summary: DailySummaryEntity): Long {
             insertCalls += 1
             val id = (byId.keys.maxOrNull() ?: 0L) + 1L
@@ -183,12 +185,16 @@ class RoomDaySummaryRepositoryTest {
             return id
         }
 
+        override suspend fun insertAll(summaries: List<DailySummaryEntity>) = Unit
+
         override suspend fun update(summary: DailySummaryEntity) {
             byId[summary.id] = summary
             byDayStart[summary.dayStartEpochMillis] = summary
             latestFlow.value = summary
             recentFlow.value = recentFlow.value.map { if (it.id == summary.id) summary else it }
         }
+
+        override suspend fun deleteAllSummaries() = Unit
     }
 
     private class FakeTimeProvider(
