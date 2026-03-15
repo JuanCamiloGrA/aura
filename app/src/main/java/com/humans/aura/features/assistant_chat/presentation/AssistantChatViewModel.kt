@@ -2,7 +2,7 @@ package com.humans.aura.features.assistant_chat.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.humans.aura.core.domain.interfaces.GeminiConfigurationRepository
+import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
@@ -21,7 +21,7 @@ class AssistantChatViewModel(
     private val ensureChatSessionUseCase: EnsureChatSessionUseCase,
     observeChatMessagesUseCase: ObserveChatMessagesUseCase,
     private val sendChatMessageUseCase: SendChatMessageUseCase,
-    private val geminiConfigurationRepository: GeminiConfigurationRepository,
+    private val aiCredentialsProvider: AiCredentialsProvider,
 ) : ViewModel() {
 
     private val activeSession = MutableStateFlow<com.humans.aura.core.domain.models.ChatSession?>(null)
@@ -51,7 +51,7 @@ class AssistantChatViewModel(
             lastErrorMessage = errorMessage,
             isLoading = session == null,
             status = AssistantChatStatus(
-                isGeminiConfigured = geminiConfigurationRepository.isApiKeyConfigured(),
+                isAiConfigured = aiCredentialsProvider.isApiKeyConfigured(),
             ),
         )
     }.stateIn(

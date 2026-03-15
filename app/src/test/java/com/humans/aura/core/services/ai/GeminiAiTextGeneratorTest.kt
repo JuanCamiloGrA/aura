@@ -1,5 +1,6 @@
 package com.humans.aura.core.services.ai
 
+import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
 import com.humans.aura.core.domain.models.AiGenerationException
 import com.humans.aura.core.domain.models.AiRequest
 import com.humans.aura.core.domain.models.AiTask
@@ -37,8 +38,8 @@ class GeminiAiTextGeneratorTest {
             """.trimIndent(),
         )
         val generator = GeminiAiTextGenerator(
-            apiKeyProvider = GeminiApiKeyProvider { "api-key" },
-            modelSelector = GeminiModelSelector(),
+            credentialsProvider = AiCredentialsProvider { "api-key" },
+            modelSelector = AiModelSelector(),
             json = json,
             client = client,
         )
@@ -59,8 +60,8 @@ class GeminiAiTextGeneratorTest {
     @Test
     fun generate_maps_retryable_http_error() = runTest {
         val generator = GeminiAiTextGenerator(
-            apiKeyProvider = GeminiApiKeyProvider { "api-key" },
-            modelSelector = GeminiModelSelector(),
+            credentialsProvider = AiCredentialsProvider { "api-key" },
+            modelSelector = AiModelSelector(),
             json = json,
             client = mockClient(HttpStatusCode.TooManyRequests, "{}"),
         )
@@ -75,8 +76,8 @@ class GeminiAiTextGeneratorTest {
     @Test
     fun generate_maps_non_retryable_http_error() = runTest {
         val generator = GeminiAiTextGenerator(
-            apiKeyProvider = GeminiApiKeyProvider { "api-key" },
-            modelSelector = GeminiModelSelector(),
+            credentialsProvider = AiCredentialsProvider { "api-key" },
+            modelSelector = AiModelSelector(),
             json = json,
             client = mockClient(HttpStatusCode.BadRequest, "{}"),
         )
@@ -96,8 +97,8 @@ class GeminiAiTextGeneratorTest {
             }
         }
         val generator = GeminiAiTextGenerator(
-            apiKeyProvider = GeminiApiKeyProvider { "api-key" },
-            modelSelector = GeminiModelSelector(),
+            credentialsProvider = AiCredentialsProvider { "api-key" },
+            modelSelector = AiModelSelector(),
             json = json,
             client = client,
         )
@@ -111,7 +112,7 @@ class GeminiAiTextGeneratorTest {
 
     @Test
     fun model_selector_uses_expected_models() {
-        val selector = GeminiModelSelector()
+        val selector = AiModelSelector()
 
         assertEquals("gemini-flash-latest", selector.modelFor(AiTask.DAY_SUMMARY))
         assertEquals("gemini-flash-latest", selector.modelFor(AiTask.CHAT))
@@ -122,8 +123,8 @@ class GeminiAiTextGeneratorTest {
     @Test
     fun generate_fails_when_api_key_is_missing() = runTest {
         val generator = GeminiAiTextGenerator(
-            apiKeyProvider = GeminiApiKeyProvider { "   " },
-            modelSelector = GeminiModelSelector(),
+            credentialsProvider = AiCredentialsProvider { "   " },
+            modelSelector = AiModelSelector(),
             json = json,
             client = mockClient(HttpStatusCode.OK, "{}"),
         )
@@ -133,14 +134,14 @@ class GeminiAiTextGeneratorTest {
         }.exceptionOrNull()
 
         assertTrue(error is AiGenerationException.NonRetryable)
-        assertEquals("Gemini API key is missing", error?.message)
+        assertEquals("AI API key is missing", error?.message)
     }
 
     @Test
     fun generate_fails_when_response_text_is_empty() = runTest {
         val generator = GeminiAiTextGenerator(
-            apiKeyProvider = GeminiApiKeyProvider { "api-key" },
-            modelSelector = GeminiModelSelector(),
+            credentialsProvider = AiCredentialsProvider { "api-key" },
+            modelSelector = AiModelSelector(),
             json = json,
             client = mockClient(HttpStatusCode.OK, "{\"candidates\":[{\"content\":{\"parts\":[]}}]}"),
         )
@@ -150,7 +151,7 @@ class GeminiAiTextGeneratorTest {
         }.exceptionOrNull()
 
         assertTrue(error is AiGenerationException.NonRetryable)
-        assertEquals("Gemini returned an empty response", error?.message)
+        assertEquals("AI provider returned an empty response", error?.message)
     }
 
     private fun mockClient(

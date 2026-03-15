@@ -1,5 +1,6 @@
 package com.humans.aura.core.services.ai
 
+import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
 import com.humans.aura.core.domain.models.AiGenerationException
 import com.humans.aura.core.domain.models.AudioTranscription
 import com.humans.aura.core.domain.models.RecordedAudio
@@ -81,8 +82,8 @@ class GeminiAudioTranscriberTest {
         }
 
         val transcriber = GeminiAudioTranscriber(
-            apiKeyProvider = GeminiApiKeyProvider { "api-key" },
-            modelSelector = GeminiModelSelector(),
+            credentialsProvider = AiCredentialsProvider { "api-key" },
+            modelSelector = AiModelSelector(),
             json = json,
             client = client,
         )
@@ -103,8 +104,8 @@ class GeminiAudioTranscriberTest {
     @Test
     fun transcribe_fails_when_audio_file_missing() = runTest {
         val transcriber = GeminiAudioTranscriber(
-            apiKeyProvider = GeminiApiKeyProvider { "api-key" },
-            modelSelector = GeminiModelSelector(),
+            credentialsProvider = AiCredentialsProvider { "api-key" },
+            modelSelector = AiModelSelector(),
             json = json,
             client = simpleClient(),
         )
@@ -126,8 +127,8 @@ class GeminiAudioTranscriberTest {
             }
         }
         val transcriber = GeminiAudioTranscriber(
-            apiKeyProvider = GeminiApiKeyProvider { "api-key" },
-            modelSelector = GeminiModelSelector(),
+            credentialsProvider = AiCredentialsProvider { "api-key" },
+            modelSelector = AiModelSelector(),
             json = json,
             client = client,
         )

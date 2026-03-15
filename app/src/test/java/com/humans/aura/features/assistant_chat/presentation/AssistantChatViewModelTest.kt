@@ -5,7 +5,7 @@ import com.humans.aura.MainDispatcherRule
 import com.humans.aura.core.domain.interfaces.AiTextGenerator
 import com.humans.aura.core.domain.interfaces.ChatRepository
 import com.humans.aura.core.domain.interfaces.ConversationContextRepository
-import com.humans.aura.core.domain.interfaces.GeminiConfigurationRepository
+import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
 import com.humans.aura.core.domain.models.AiRequest
 import com.humans.aura.core.domain.models.AiResponse
 import com.humans.aura.core.domain.models.ChatMessage
@@ -44,7 +44,7 @@ class AssistantChatViewModelTest {
             ensureChatSessionUseCase = EnsureChatSessionUseCase(repository),
             observeChatMessagesUseCase = ObserveChatMessagesUseCase(repository),
             sendChatMessageUseCase = sendUseCase,
-            geminiConfigurationRepository = FakeGeminiConfigurationRepository(),
+            aiCredentialsProvider = FakeAiCredentialsProvider(),
         )
         advanceUntilIdle()
 
@@ -70,7 +70,7 @@ class AssistantChatViewModelTest {
                 buildChatPromptUseCase = BuildChatPromptUseCase(),
                 aiTextGenerator = FakeAiTextGenerator(),
             ),
-            geminiConfigurationRepository = FakeGeminiConfigurationRepository(),
+            aiCredentialsProvider = FakeAiCredentialsProvider(),
         )
         advanceUntilIdle()
 
@@ -123,7 +123,7 @@ class AssistantChatViewModelTest {
         override suspend fun generate(request: AiRequest): AiResponse = AiResponse("Sure", "gemini-test")
     }
 
-    private class FakeGeminiConfigurationRepository : GeminiConfigurationRepository {
-        override fun isApiKeyConfigured(): Boolean = true
+    private class FakeAiCredentialsProvider : AiCredentialsProvider {
+        override fun requireApiKey(): String = "api-key"
     }
 }

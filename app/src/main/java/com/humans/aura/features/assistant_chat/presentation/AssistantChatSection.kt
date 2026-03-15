@@ -125,7 +125,7 @@ fun AssistantChatSection(
             }
         }
 
-        GeminiConfigurationCard(
+        AiConfigurationCard(
             status = uiState.status,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         )
@@ -282,15 +282,15 @@ fun AssistantChatSection(
 }
 
 @Composable
-private fun GeminiConfigurationCard(
+private fun AiConfigurationCard(
     status: AssistantChatStatus,
     modifier: Modifier = Modifier,
 ) {
-    val configured = status.isGeminiConfigured
+    val configured = status.isAiConfigured
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .testTag("assistant_chat_gemini_status"),
+            .testTag("assistant_chat_ai_status"),
         colors = CardDefaults.cardColors(
             containerColor = if (configured) {
                 MaterialTheme.colorScheme.surfaceVariant
@@ -305,7 +305,7 @@ private fun GeminiConfigurationCard(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = if (configured) "Gemini connected" else "Gemini key missing",
+                text = if (configured) "AI connected" else "AI key missing",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = if (configured) {
@@ -316,9 +316,9 @@ private fun GeminiConfigurationCard(
             )
             Text(
                 text = if (configured) {
-                    "${status.providerLabel} is configured. Chat and summaries can reach the model."
+                    "AI is configured. Chat and summaries can reach the model."
                 } else {
-                    "Add `GEMINI_API_KEY` to Gradle/local properties so chat and summaries can respond."
+                    "Add your AI API key to local properties so AI features can respond."
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = if (configured) {

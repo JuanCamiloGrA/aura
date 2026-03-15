@@ -36,7 +36,7 @@ class AssistantChatSectionTest {
                             ChatMessage(2, 1, ChatRole.ASSISTANT, "You protected **focus**.\n\n- Keep the same start\n- Protect your afternoon", "You protected **focus**.\n\n- Keep the same start\n- Protect your afternoon", "en", 2L, false),
                         ),
                         draftMessage = "Plan tomorrow",
-                        status = AssistantChatStatus(isGeminiConfigured = true),
+                        status = AssistantChatStatus(isAiConfigured = true),
                     ),
                     onDraftChanged = {},
                     onSendMessage = { sends += 1 },
@@ -51,7 +51,7 @@ class AssistantChatSectionTest {
         composeRule.onNodeWithText("You protected", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("Keep the same start", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("Protect your afternoon", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Gemini connected").assertIsDisplayed()
+        composeRule.onNodeWithText("AI connected").assertIsDisplayed()
 
         assertEquals(1, sends)
     }
@@ -66,7 +66,7 @@ class AssistantChatSectionTest {
                         isSending = true,
                         draftMessage = "",
                         lastErrorMessage = "Unable to reach AURA right now",
-                        status = AssistantChatStatus(isGeminiConfigured = false),
+                        status = AssistantChatStatus(isAiConfigured = false),
                     ),
                     onDraftChanged = {},
                     onSendMessage = {},
@@ -77,7 +77,7 @@ class AssistantChatSectionTest {
 
         composeRule.onNodeWithText("Ask AURA about your day, goals, or what to do next.").assertIsDisplayed()
         composeRule.onNodeWithText("Unable to reach AURA right now").assertIsDisplayed()
-        composeRule.onNodeWithText("Gemini key missing").assertIsDisplayed()
+        composeRule.onNodeWithText("AI key missing").assertIsDisplayed()
         composeRule.onNodeWithTag("assistant_chat_send_button").assertIsNotEnabled()
         composeRule.onNodeWithText("Voice").assertIsDisplayed()
     }
@@ -93,7 +93,7 @@ class AssistantChatSectionTest {
                         messages = listOf(
                             ChatMessage(1, 1, ChatRole.ASSISTANT, "Take one breath.", "Take one breath.", "en", 1L, false),
                         ),
-                        status = AssistantChatStatus(isGeminiConfigured = true),
+                        status = AssistantChatStatus(isAiConfigured = true),
                     ),
                     onDraftChanged = {},
                     onSendMessage = {},

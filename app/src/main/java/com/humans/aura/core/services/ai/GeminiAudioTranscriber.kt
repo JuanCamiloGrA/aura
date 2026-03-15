@@ -1,5 +1,6 @@
 package com.humans.aura.core.services.ai
 
+import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
 import com.humans.aura.core.domain.interfaces.AudioTranscriber
 import com.humans.aura.core.domain.models.AiGenerationException
 import com.humans.aura.core.domain.models.AiTask
@@ -30,8 +31,8 @@ import java.io.File
 import java.io.IOException
 
 class GeminiAudioTranscriber(
-    private val apiKeyProvider: GeminiApiKeyProvider,
-    private val modelSelector: GeminiModelSelector,
+    private val credentialsProvider: AiCredentialsProvider,
+    private val modelSelector: AiModelSelector,
     private val json: Json,
     private val client: HttpClient = HttpClient {
         install(ContentNegotiation) {
@@ -42,9 +43,9 @@ class GeminiAudioTranscriber(
 ) : AudioTranscriber {
 
     override suspend fun transcribe(audio: RecordedAudio): AudioTranscription {
-        val apiKey = apiKeyProvider.requireApiKey().trim()
+        val apiKey = credentialsProvider.requireApiKey().trim()
         if (apiKey.isBlank()) {
-            throw AiGenerationException.NonRetryable("Gemini API key is missing")
+            throw AiGenerationException.NonRetryable("AI API key is missing")
         }
 
         val localFile = File(audio.filePath)
@@ -97,7 +98,7 @@ class GeminiAudioTranscriber(
                 ?.text
                 .orEmpty()
             if (responseText.isBlank()) {
-                throw AiGenerationException.NonRetryable("Gemini returned an empty transcription response")
+                throw AiGenerationException.NonRetryable("AI provider returned an empty transcription response")
             }
 
             val structuredResponse = json.decodeFromString<GeminiStructuredTranscriptionResponse>(responseText)
@@ -107,25 +108,25 @@ class GeminiAudioTranscriber(
             )
         } catch (error: IOException) {
             throw AiGenerationException.Retryable(
-                message = error.message ?: "Network error while contacting Gemini",
+                message = error.message ?: "Network error while contacting AI provider",
                 cause = error,
             )
         } catch (error: ResponseException) {
             val statusCode = error.response.status.value
             if (statusCode == 429 || statusCode >= 500) {
                 throw AiGenerationException.Retryable(
-                    message = "Gemini request failed with HTTP $statusCode",
+                    message = "AI request failed with HTTP $statusCode",
                     cause = error,
                 )
             } else {
                 throw AiGenerationException.NonRetryable(
-                    message = "Gemini request failed with HTTP $statusCode",
+                    message = "AI request failed with HTTP $statusCode",
                     cause = error,
                 )
             }
         } catch (error: IllegalArgumentException) {
             throw AiGenerationException.NonRetryable(
-                message = error.message ?: "Invalid Gemini response",
+                message = error.message ?: "Invalid AI response",
                 cause = error,
             )
         } finally {
@@ -151,7 +152,7 @@ class GeminiAudioTranscriber(
 
         return response.headers["X-Goog-Upload-URL"]
             ?: response.headers["x-goog-upload-url"]
-            ?: throw AiGenerationException.NonRetryable("Gemini did not return an upload URL")
+            ?: throw AiGenerationException.NonRetryable("AI provider did not return an upload URL")
     }
 
     private suspend fun uploadFile(
@@ -169,7 +170,7 @@ class GeminiAudioTranscriber(
 
         val payload = json.parseToJsonElement(responseText).jsonObject
         val filePayload = payload["file"]?.jsonObject
-            ?: throw AiGenerationException.NonRetryable("Gemini upload response did not include a file")
+            ?: throw AiGenerationException.NonRetryable("AI provider upload response did not include a file")
         return parseFileReference(filePayload)
     }
 
@@ -189,8 +190,8 @@ class GeminiAudioTranscriber(
                 -> return fileReference
 
                 "PROCESSING" -> delay(FILE_STATUS_POLL_INTERVAL_MS)
-                "FAILED" -> throw AiGenerationException.NonRetryable("Gemini could not process the recorded audio")
-                else -> throw AiGenerationException.NonRetryable("Gemini file is in an unsupported state: ${fileReference.state}")
+                "FAILED" -> throw AiGenerationException.NonRetryable("AI provider could not process the recorded audio")
+                else -> throw AiGenerationException.NonRetryable("AI provider file is in an unsupported state: ${fileReference.state}")
             }
         }
 
@@ -207,9 +208,9 @@ class GeminiAudioTranscriber(
 
     private fun parseFileReference(payload: JsonObject): GeminiFileReference = GeminiFileReference(
         name = payload.stringValue("name")
-            ?: throw AiGenerationException.NonRetryable("Gemini file response did not include a name"),
+            ?: throw AiGenerationException.NonRetryable("AI provider file response did not include a name"),
         uri = payload.stringValue("uri")
-            ?: throw AiGenerationException.NonRetryable("Gemini file response did not include a URI"),
+            ?: throw AiGenerationException.NonRetryable("AI provider file response did not include a URI"),
         mimeType = payload.stringValue("mime_type", "mimeType") ?: DEFAULT_AUDIO_MIME_TYPE,
         state = payload.stringValue("state"),
     )

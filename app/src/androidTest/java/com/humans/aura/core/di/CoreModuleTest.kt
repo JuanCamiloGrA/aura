@@ -21,8 +21,8 @@ import com.humans.aura.core.domain.interfaces.DaySummaryRepository
 import com.humans.aura.core.domain.interfaces.SyncScheduler
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.interfaces.WallpaperController
-import com.humans.aura.core.services.ai.GeminiApiKeyProvider
-import com.humans.aura.core.services.ai.GeminiModelSelector
+import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
+import com.humans.aura.core.services.ai.AiModelSelector
 import com.humans.aura.core.services.sync.AuraWorkerFactory
 import com.humans.aura.core.domain.interfaces.DaySummaryContextEncoder
 import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
@@ -79,8 +79,8 @@ class CoreModuleTest {
                 get<WorkManager>()
                 get<SyncScheduler>()
                 get<WallpaperController>()
-                get<GeminiApiKeyProvider>()
-                get<GeminiModelSelector>()
+                get<AiCredentialsProvider>()
+                get<AiModelSelector>()
                 get<AiTextGenerator>()
                 get<AudioTranscriber>()
                 get<AppIntentCoordinator>()

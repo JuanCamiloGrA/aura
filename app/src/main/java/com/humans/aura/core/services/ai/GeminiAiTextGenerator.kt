@@ -1,5 +1,6 @@
 package com.humans.aura.core.services.ai
 
+import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
 import com.humans.aura.core.domain.interfaces.AiTextGenerator
 import com.humans.aura.core.domain.models.AiGenerationException
 import com.humans.aura.core.domain.models.AiRequest
@@ -21,8 +22,8 @@ import kotlinx.serialization.json.Json
 import java.io.IOException
 
 class GeminiAiTextGenerator(
-    private val apiKeyProvider: GeminiApiKeyProvider,
-    private val modelSelector: GeminiModelSelector,
+    private val credentialsProvider: AiCredentialsProvider,
+    private val modelSelector: AiModelSelector,
     private val json: Json,
     private val client: HttpClient = HttpClient {
         install(ContentNegotiation) {
@@ -32,9 +33,9 @@ class GeminiAiTextGenerator(
 ) : AiTextGenerator {
 
     override suspend fun generate(request: AiRequest): AiResponse {
-        val apiKey = apiKeyProvider.requireApiKey().trim()
+        val apiKey = credentialsProvider.requireApiKey().trim()
         if (apiKey.isBlank()) {
-            throw AiGenerationException.NonRetryable("Gemini API key is missing")
+            throw AiGenerationException.NonRetryable("AI API key is missing")
         }
         val modelName = modelSelector.modelFor(request.task)
         val response: GeminiGenerateContentResponse = try {
@@ -62,42 +63,38 @@ class GeminiAiTextGenerator(
             }.body()
         } catch (error: IOException) {
             throw AiGenerationException.Retryable(
-                message = error.message ?: "Network error while contacting Gemini",
+                message = error.message ?: "Network error while contacting AI provider",
                 cause = error,
             )
         } catch (error: ResponseException) {
             val statusCode = error.response.status.value
             if (statusCode == 429 || statusCode >= 500) {
                 throw AiGenerationException.Retryable(
-                    message = "Gemini request failed with HTTP $statusCode",
+                    message = "AI request failed with HTTP $statusCode",
                     cause = error,
                 )
             } else {
                 throw AiGenerationException.NonRetryable(
-                    message = "Gemini request failed with HTTP $statusCode",
+                    message = "AI request failed with HTTP $statusCode",
                     cause = error,
                 )
             }
         } catch (error: IllegalStateException) {
             throw AiGenerationException.NonRetryable(
-                message = error.message ?: "Invalid Gemini response",
+                message = error.message ?: "Invalid AI response",
                 cause = error,
             )
         }
 
         val text = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text.orEmpty()
         if (text.isBlank()) {
-            throw AiGenerationException.NonRetryable("Gemini returned an empty response")
+            throw AiGenerationException.NonRetryable("AI provider returned an empty response")
         }
         return AiResponse(text = text, modelName = modelName)
     }
 }
 
-fun interface GeminiApiKeyProvider {
-    fun requireApiKey(): String
-}
-
-class GeminiModelSelector {
+class AiModelSelector {
     fun modelFor(task: com.humans.aura.core.domain.models.AiTask): String = when (task) {
         com.humans.aura.core.domain.models.AiTask.DAY_SUMMARY,
         com.humans.aura.core.domain.models.AiTask.CHAT,
