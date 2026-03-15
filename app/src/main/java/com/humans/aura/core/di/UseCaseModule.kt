@@ -16,7 +16,6 @@ import com.humans.aura.features.assistant_chat.domain.BuildChatPromptUseCase
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatSessionsUseCase
-import com.humans.aura.features.assistant_chat.domain.AssistantReplySpeaker
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
 import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
@@ -52,11 +51,6 @@ val useCaseModule = module {
     factory { ObserveChatMessagesUseCase(get()) }
     factory { ObserveChatSessionsUseCase(get()) }
     factory { SendChatMessageUseCase(get(), get(), get(), get()) }
-    factory<AssistantReplySpeaker> {
-        AssistantReplySpeaker { reply ->
-            get<SpeakAssistantReplyUseCase>().invoke(reply)
-        }
-    }
     factory { NormalizeTranscriptToEnglishUseCase(get()) }
     factory { SpeakAssistantReplyUseCase(get()) }
 }

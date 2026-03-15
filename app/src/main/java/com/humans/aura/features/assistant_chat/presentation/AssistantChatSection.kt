@@ -43,19 +43,19 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.humans.aura.core.domain.models.ChatMessage
 import com.humans.aura.core.domain.models.ChatRole
+import com.humans.aura.core.presentation.components.MarkdownMessageText
 import com.humans.aura.features.voice.presentation.VoiceCaptureButton
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AssistantChatSection(
     viewModel: AssistantChatViewModel = koinViewModel(),
-    voiceCaptureButton: @Composable ((String) -> Unit) -> Unit = { onSend -> VoiceCaptureButton(onSendTranscript = onSend) },
+    voiceCaptureButton: @Composable ((String) -> Unit) -> Unit = { onTranscribed -> VoiceCaptureButton(onSendTranscript = onTranscribed) },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     AssistantChatSection(
@@ -371,8 +371,8 @@ private fun ChatBubble(message: ChatMessage) {
                 },
             )
 
-            Text(
-                text = message.originalText,
+            MarkdownMessageText(
+                markdown = message.originalText,
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (isUser) {
                     MaterialTheme.colorScheme.onPrimary

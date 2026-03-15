@@ -33,7 +33,7 @@ class AssistantChatSectionTest {
                         activeSession = ChatSession(1, "Daily assistant", 1L, 1L, false),
                         messages = listOf(
                             ChatMessage(1, 1, ChatRole.USER, "How did I do?", "How did I do?", "en", 1L, false),
-                            ChatMessage(2, 1, ChatRole.ASSISTANT, "You protected focus.", "You protected focus.", "en", 2L, false),
+                            ChatMessage(2, 1, ChatRole.ASSISTANT, "You protected **focus**.\n\n- Keep the same start\n- Protect your afternoon", "You protected **focus**.\n\n- Keep the same start\n- Protect your afternoon", "en", 2L, false),
                         ),
                         draftMessage = "Plan tomorrow",
                         status = AssistantChatStatus(isGeminiConfigured = true),
@@ -48,6 +48,9 @@ class AssistantChatSectionTest {
         composeRule.onNodeWithTag("assistant_chat_send_button").assertIsEnabled().performClick()
         composeRule.onNodeWithText("You").assertIsDisplayed()
         composeRule.onNodeWithText("AURA").assertIsDisplayed()
+        composeRule.onNodeWithText("You protected focus.").assertIsDisplayed()
+        composeRule.onNodeWithText("Keep the same start").assertIsDisplayed()
+        composeRule.onNodeWithText("Protect your afternoon").assertIsDisplayed()
         composeRule.onNodeWithText("Gemini connected").assertIsDisplayed()
 
         assertEquals(1, sends)

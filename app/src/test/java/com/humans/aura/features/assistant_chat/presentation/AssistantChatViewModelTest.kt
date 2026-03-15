@@ -12,7 +12,6 @@ import com.humans.aura.core.domain.models.ChatMessage
 import com.humans.aura.core.domain.models.ChatRole
 import com.humans.aura.core.domain.models.ChatSession
 import com.humans.aura.core.domain.models.DaySummaryContext
-import com.humans.aura.features.assistant_chat.domain.AssistantReplySpeaker
 import com.humans.aura.features.assistant_chat.domain.BuildChatPromptUseCase
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
@@ -33,7 +32,7 @@ class AssistantChatViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun send_message_clears_draft_and_speaks_reply() = runTest {
+    fun send_message_clears_draft() = runTest {
         val repository = FakeChatRepository()
         val sendUseCase = SendChatMessageUseCase(
             chatRepository = repository,
@@ -41,12 +40,10 @@ class AssistantChatViewModelTest {
             buildChatPromptUseCase = BuildChatPromptUseCase(),
             aiTextGenerator = FakeAiTextGenerator(),
         )
-        val speaker = FakeAssistantReplySpeaker()
         val viewModel = AssistantChatViewModel(
             ensureChatSessionUseCase = EnsureChatSessionUseCase(repository),
             observeChatMessagesUseCase = ObserveChatMessagesUseCase(repository),
             sendChatMessageUseCase = sendUseCase,
-            assistantReplySpeaker = speaker,
             geminiConfigurationRepository = FakeGeminiConfigurationRepository(),
         )
         advanceUntilIdle()
@@ -56,7 +53,6 @@ class AssistantChatViewModelTest {
         advanceUntilIdle()
 
         assertEquals("Plan my afternoon", repository.userMessages.single().originalText)
-        assertEquals(listOf("Sure"), speaker.replies)
         assertEquals("", viewModel.uiState.value.draftMessage)
     }
 
@@ -74,7 +70,6 @@ class AssistantChatViewModelTest {
                 buildChatPromptUseCase = BuildChatPromptUseCase(),
                 aiTextGenerator = FakeAiTextGenerator(),
             ),
-            assistantReplySpeaker = FakeAssistantReplySpeaker(),
             geminiConfigurationRepository = FakeGeminiConfigurationRepository(),
         )
         advanceUntilIdle()
@@ -85,14 +80,6 @@ class AssistantChatViewModelTest {
                 assertEquals(1, item.messages.size)
                 cancelAndIgnoreRemainingEvents()
             }
-        }
-    }
-
-    private class FakeAssistantReplySpeaker : AssistantReplySpeaker {
-        val replies = mutableListOf<String>()
-
-        override suspend fun invoke(reply: String) {
-            replies += reply
         }
     }
 

@@ -3,7 +3,6 @@ package com.humans.aura.features.assistant_chat.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.humans.aura.core.domain.interfaces.GeminiConfigurationRepository
-import com.humans.aura.features.assistant_chat.domain.AssistantReplySpeaker
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
@@ -22,7 +21,6 @@ class AssistantChatViewModel(
     private val ensureChatSessionUseCase: EnsureChatSessionUseCase,
     observeChatMessagesUseCase: ObserveChatMessagesUseCase,
     private val sendChatMessageUseCase: SendChatMessageUseCase,
-    private val assistantReplySpeaker: AssistantReplySpeaker,
     private val geminiConfigurationRepository: GeminiConfigurationRepository,
 ) : ViewModel() {
 
@@ -81,12 +79,11 @@ class AssistantChatViewModel(
             isSending.value = true
             lastErrorMessage.value = null
             runCatching {
-                val reply = sendChatMessageUseCase(
+                sendChatMessageUseCase(
                     originalText = message,
                     normalizedEnglishText = message,
                     sourceLanguageCode = "en",
                 )
-                assistantReplySpeaker(reply)
             }.onSuccess {
                 draftMessage.value = ""
                 lastErrorMessage.value = null

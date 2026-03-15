@@ -21,7 +21,6 @@ import com.humans.aura.core.domain.models.ChatSession
 import com.humans.aura.core.domain.models.DaySummary
 import com.humans.aura.core.domain.models.DaySummaryContext
 import com.humans.aura.core.domain.models.DailyGoal
-import com.humans.aura.features.assistant_chat.domain.AssistantReplySpeaker
 import com.humans.aura.features.assistant_chat.domain.BuildChatPromptUseCase
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
@@ -55,7 +54,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
@@ -130,10 +128,8 @@ class UseCaseModuleTest {
                 get<SendChatMessageUseCase>()
                 get<NormalizeTranscriptToEnglishUseCase>()
                 get<SpeakAssistantReplyUseCase>()
-                get<AssistantReplySpeaker>().invoke("AURA reply")
             }
 
-            assertEquals(listOf("AURA reply"), fakeTextToSpeechEngine.spokenTexts)
         } finally {
             app.close()
         }
