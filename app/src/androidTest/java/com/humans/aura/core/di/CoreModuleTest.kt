@@ -9,6 +9,7 @@ import com.humans.aura.core.domain.interfaces.AiTextGenerator
 import com.humans.aura.core.domain.interfaces.IntentMediator
 import com.humans.aura.core.domain.interfaces.ConversationContextRepository
 import com.humans.aura.core.domain.interfaces.ActivityRepository
+import com.humans.aura.core.domain.interfaces.CurrentTimeTicker
 import com.humans.aura.core.domain.interfaces.ChatRepository
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
@@ -66,6 +67,7 @@ class CoreModuleTest {
                 get<Json>()
                 get<IntentMediator>()
                 get<TimeProvider>()
+                get<CurrentTimeTicker>()
                 get<WorkManager>()
                 get<SyncScheduler>()
                 get<WallpaperController>()
@@ -86,6 +88,8 @@ class CoreModuleTest {
     }
 
     private class FakeActivityRepository : ActivityRepository {
+        override suspend fun hasLoggedActivities(): Boolean = false
+
         override fun observeCurrentActivity(): Flow<Activity?> = MutableStateFlow(null)
         override fun observeRecentActivities(limit: Int): Flow<List<Activity>> = MutableStateFlow(emptyList())
         override fun observeActivitiesForDay(dayStartEpochMillis: Long): Flow<List<Activity>> = MutableStateFlow(emptyList())

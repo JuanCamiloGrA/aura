@@ -24,6 +24,8 @@ class PredictNextActivityTitleUseCaseTest {
     private class FakeActivityRepository : ActivityRepository {
         var requestedTime: Long? = null
 
+        override suspend fun hasLoggedActivities(): Boolean = false
+
         override fun observeCurrentActivity(): Flow<Activity?> = emptyFlow()
         override fun observeRecentActivities(limit: Int): Flow<List<Activity>> = emptyFlow()
         override fun observeActivitiesForDay(dayStartEpochMillis: Long): Flow<List<Activity>> = emptyFlow()

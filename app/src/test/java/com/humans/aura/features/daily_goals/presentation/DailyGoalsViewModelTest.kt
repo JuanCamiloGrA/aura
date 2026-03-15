@@ -123,6 +123,8 @@ class DailyGoalsViewModelTest {
     }
 
     private class FakeActivityRepository : ActivityRepository {
+        override suspend fun hasLoggedActivities(): Boolean = true
+
         override fun observeCurrentActivity(): Flow<Activity?> = MutableStateFlow(null)
         override fun observeRecentActivities(limit: Int): Flow<List<Activity>> = MutableStateFlow(emptyList())
         override fun observeActivitiesForDay(dayStartEpochMillis: Long): Flow<List<Activity>> = MutableStateFlow(listOf(Activity(1, "Focus", 0L, null, ActivityStatus.ACTIVE, false)))

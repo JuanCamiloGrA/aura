@@ -2,6 +2,7 @@ package com.humans.aura.core.di
 
 import com.humans.aura.core.domain.interfaces.ActivityRepository
 import com.humans.aura.core.domain.interfaces.AiTextGenerator
+import com.humans.aura.core.domain.interfaces.AppLaunchRepository
 import com.humans.aura.core.domain.interfaces.ChatRepository
 import com.humans.aura.core.domain.interfaces.ConversationContextRepository
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
@@ -42,6 +43,7 @@ import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
 import com.humans.aura.features.day_summary.data.DaySummaryReflectionParser
 import com.humans.aura.features.stopwatch.domain.ClearActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.ActivityPrediction
+import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
@@ -64,6 +66,7 @@ class UseCaseModuleTest {
     @Test
     fun use_case_module_resolves_all_factories() = runTest {
         val fakeActivityRepository = FakeActivityRepository()
+        val fakeAppLaunchRepository = FakeAppLaunchRepository()
         val fakeDailyGoalRepository = FakeDailyGoalRepository()
         val fakeDaySummaryRepository = FakeDaySummaryRepository()
         val fakeConversationContextRepository = FakeConversationContextRepository()
@@ -78,6 +81,7 @@ class UseCaseModuleTest {
             modules(
                 module {
                     single<ActivityRepository> { fakeActivityRepository }
+                    single<AppLaunchRepository> { fakeAppLaunchRepository }
                     single<DailyGoalRepository> { fakeDailyGoalRepository }
                     single<DaySummaryRepository> { fakeDaySummaryRepository }
                     single<ConversationContextRepository> { fakeConversationContextRepository }
@@ -104,6 +108,7 @@ class UseCaseModuleTest {
             with(app.koin) {
                 get<ObserveCurrentActivityUseCase>()
                 get<ObserveRecentActivitiesUseCase>()
+                get<EnsureInitialActivityUseCase>()
                 get<LogNewActivityUseCase>()
                 get<PredictNextActivityTitleUseCase>()
                 get<UpdateCurrentActivityStatusUseCase>()
@@ -137,6 +142,8 @@ class UseCaseModuleTest {
     }
 
     private class FakeActivityRepository : ActivityRepository {
+        override suspend fun hasLoggedActivities(): Boolean = false
+
         override fun observeCurrentActivity(): Flow<Activity?> = MutableStateFlow(null)
         override fun observeRecentActivities(limit: Int): Flow<List<Activity>> = MutableStateFlow(emptyList())
         override fun observeActivitiesForDay(dayStartEpochMillis: Long): Flow<List<Activity>> = MutableStateFlow(emptyList())
@@ -144,6 +151,12 @@ class UseCaseModuleTest {
         override suspend fun predictNextTitle(nowEpochMillis: Long): ActivityPrediction? = null
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
         override suspend fun clearAll() = Unit
+    }
+
+    private class FakeAppLaunchRepository : AppLaunchRepository {
+        override suspend fun hasCompletedInitialStopwatchBootstrap(): Boolean = true
+
+        override suspend fun markInitialStopwatchBootstrapCompleted() = Unit
     }
 
     private class FakeDailyGoalRepository : DailyGoalRepository {

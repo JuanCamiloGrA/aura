@@ -71,6 +71,7 @@ class RepositoryModuleTest {
     }
 
     private class FakeActivityDao : ActivityDao {
+        override suspend fun countActivities(): Int = 0
         override fun observeCurrentActivity(): Flow<ActivityEntity?> = MutableStateFlow(null)
         override fun observeRecentActivities(limit: Int): Flow<List<ActivityEntity>> = MutableStateFlow(emptyList())
         override fun observeActivitiesForDay(dayStartEpochMillis: Long, dayEndEpochMillis: Long): Flow<List<ActivityEntity>> = MutableStateFlow(emptyList())

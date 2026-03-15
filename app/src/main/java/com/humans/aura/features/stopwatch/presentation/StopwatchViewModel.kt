@@ -2,8 +2,11 @@ package com.humans.aura.features.stopwatch.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.humans.aura.core.domain.interfaces.CurrentTimeTicker
+import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.ActivityStatus
 import com.humans.aura.features.stopwatch.domain.ClearActivitiesUseCase
+import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveRecentActivitiesUseCase
@@ -20,16 +23,24 @@ import java.util.Locale
 class StopwatchViewModel(
     observeCurrentActivityUseCase: ObserveCurrentActivityUseCase,
     observeRecentActivitiesUseCase: ObserveRecentActivitiesUseCase,
+    private val ensureInitialActivityUseCase: EnsureInitialActivityUseCase,
     private val logNewActivityUseCase: LogNewActivityUseCase,
     private val predictNextActivityTitleUseCase: PredictNextActivityTitleUseCase,
     private val updateCurrentActivityStatusUseCase: UpdateCurrentActivityStatusUseCase,
     private val clearActivitiesUseCase: ClearActivitiesUseCase,
+    timeProvider: TimeProvider,
+    currentTimeTicker: CurrentTimeTicker,
 ) : ViewModel() {
 
     private val draftTitle = MutableStateFlow("")
     private val prediction = MutableStateFlow<com.humans.aura.features.stopwatch.domain.ActivityPrediction?>(null)
     private val isPredictionAutofilled = MutableStateFlow(false)
     private val isLogging = MutableStateFlow(false)
+    private val nowEpochMillis = currentTimeTicker.tickEvery(RUNNING_DURATION_TICK_MILLIS).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = timeProvider.currentTimeMillis(),
+    )
     private val draftState = combine(
         draftTitle,
         prediction,
@@ -48,14 +59,17 @@ class StopwatchViewModel(
         observeCurrentActivityUseCase(),
         observeRecentActivitiesUseCase(),
         draftState,
-    ) { currentActivity, recentActivities, currentDraftState ->
+        nowEpochMillis,
+    ) { currentActivity, recentActivities, currentDraftState, currentNowEpochMillis ->
         StopwatchUiState(
             currentActivity = currentActivity,
             recentActivities = recentActivities,
             draftTitle = currentDraftState.draftTitle,
             prediction = currentDraftState.prediction,
             isPredictionAutofilled = currentDraftState.isPredictionAutofilled,
-            runningDurationLabel = currentActivity?.let(::formatRunningDuration) ?: "00:00:00",
+            runningDurationLabel = currentActivity?.let { activity ->
+                formatRunningDuration(activity, currentNowEpochMillis)
+            } ?: "00:00:00",
             isLoading = false,
             isLogging = currentDraftState.isLogging,
         )
@@ -66,7 +80,10 @@ class StopwatchViewModel(
     )
 
     init {
-        refreshPrediction()
+        viewModelScope.launch {
+            ensureInitialActivityUseCase()
+            applyPrediction(predictNextActivityTitleUseCase())
+        }
     }
 
     fun onDraftTitleChanged(value: String) {
@@ -139,8 +156,11 @@ class StopwatchViewModel(
         }
     }
 
-    private fun formatRunningDuration(activity: com.humans.aura.core.domain.models.Activity): String {
-        val endMillis = activity.endTimeEpochMillis ?: System.currentTimeMillis()
+    private fun formatRunningDuration(
+        activity: com.humans.aura.core.domain.models.Activity,
+        currentNowEpochMillis: Long,
+    ): String {
+        val endMillis = activity.endTimeEpochMillis ?: currentNowEpochMillis
         val totalSeconds = ((endMillis - activity.startTimeEpochMillis).coerceAtLeast(0) / 1000L)
         val hours = totalSeconds / 3600
         val minutes = (totalSeconds % 3600) / 60
@@ -154,4 +174,8 @@ class StopwatchViewModel(
         val isPredictionAutofilled: Boolean,
         val isLogging: Boolean,
     )
+
+    private companion object {
+        private const val RUNNING_DURATION_TICK_MILLIS = 1_000L
+    }
 }

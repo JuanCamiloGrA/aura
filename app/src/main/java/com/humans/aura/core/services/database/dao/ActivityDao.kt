@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ActivityDao {
+    @Query("SELECT COUNT(*) FROM activities")
+    suspend fun countActivities(): Int
+
     @Query(
         "SELECT * FROM activities WHERE end_time_epoch_millis IS NULL ORDER BY start_time_epoch_millis DESC LIMIT 1",
     )

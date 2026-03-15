@@ -19,6 +19,8 @@ class RoomActivityRepository(
     private val intentMediator: IntentMediator,
 ) : ActivityRepository {
 
+    override suspend fun hasLoggedActivities(): Boolean = activityDao.countActivities() > 0
+
     override fun observeCurrentActivity(): Flow<Activity?> =
         activityDao.observeCurrentActivity().map { entity ->
             entity?.toDomain()

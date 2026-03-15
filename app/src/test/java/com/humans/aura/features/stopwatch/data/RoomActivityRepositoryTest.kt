@@ -33,6 +33,19 @@ class RoomActivityRepositoryTest {
     }
 
     @Test
+    fun has_logged_activities_uses_count_query() = runTest {
+        val repository = RoomActivityRepository(
+            activityDao = FakeActivityDao(activityCount = 2),
+            timeProvider = FakeTimeProvider(),
+            intentMediator = FakeIntentMediator(),
+        )
+
+        val hasLoggedActivities = repository.hasLoggedActivities()
+
+        assertEquals(true, hasLoggedActivities)
+    }
+
+    @Test
     fun log_new_activity_emits_sleep_intent_for_sleep_title() = runTest {
         val dao = FakeActivityDao(inserted = ActivityEntity(5, "Sleep", 99L, null, "ACTIVE", false))
         val mediator = FakeIntentMediator()
@@ -74,12 +87,14 @@ class RoomActivityRepositoryTest {
         current: ActivityEntity? = null,
         private val inserted: ActivityEntity? = null,
         private val prediction: ActivityPredictionEntity? = null,
+        private val activityCount: Int = 0,
     ) : ActivityDao {
         private val currentFlow = MutableStateFlow(current)
         private val recentFlow = MutableStateFlow<List<ActivityEntity>>(emptyList())
         private val dayFlow = MutableStateFlow<List<ActivityEntity>>(emptyList())
         var updatedStatus: String? = null
 
+        override suspend fun countActivities(): Int = activityCount
         override fun observeCurrentActivity(): Flow<ActivityEntity?> = currentFlow.asStateFlow()
         override fun observeRecentActivities(limit: Int): Flow<List<ActivityEntity>> = recentFlow.asStateFlow()
         override fun observeActivitiesForDay(dayStartEpochMillis: Long, dayEndEpochMillis: Long): Flow<List<ActivityEntity>> = dayFlow.asStateFlow()

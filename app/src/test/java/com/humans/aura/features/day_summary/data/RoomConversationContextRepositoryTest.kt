@@ -100,6 +100,8 @@ class RoomConversationContextRepositoryTest {
     ) : ActivityRepository {
         private val dayActivities = MutableStateFlow(activities)
 
+        override suspend fun hasLoggedActivities(): Boolean = dayActivities.value.isNotEmpty()
+
         override fun observeCurrentActivity(): Flow<Activity?> = flowOf(null)
 
         override fun observeRecentActivities(limit: Int): Flow<List<Activity>> = flowOf(emptyList())

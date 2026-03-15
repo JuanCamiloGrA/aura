@@ -2,6 +2,8 @@ package com.humans.aura.core.di
 
 import androidx.work.WorkManager
 import com.humans.aura.core.domain.interfaces.AiTextGenerator
+import com.humans.aura.core.domain.interfaces.AppLaunchRepository
+import com.humans.aura.core.domain.interfaces.CurrentTimeTicker
 import com.humans.aura.core.domain.interfaces.IntentMediator
 import com.humans.aura.core.domain.interfaces.SpeechRecognizer
 import com.humans.aura.core.domain.interfaces.SyncScheduler
@@ -17,9 +19,11 @@ import com.humans.aura.core.services.ai.GeminiModelSelector
 import com.humans.aura.core.services.speech.AndroidSpeechRecognizer
 import com.humans.aura.core.services.sync.AuraWorkerFactory
 import com.humans.aura.core.services.sync.WorkManagerSyncScheduler
+import com.humans.aura.core.services.time.SystemCurrentTimeTicker
 import com.humans.aura.core.services.time.SystemTimeProvider
 import com.humans.aura.core.services.tts.AndroidTextToSpeechEngine
 import com.humans.aura.core.services.wallpaper.AndroidWallpaperController
+import com.humans.aura.core.services.preferences.SharedPreferencesAppLaunchRepository
 import org.koin.android.ext.koin.androidApplication
 import org.koin.dsl.module
 import kotlinx.serialization.json.Json
@@ -31,6 +35,8 @@ val coreModule = module {
     single { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
     single<IntentMediator> { DefaultIntentMediator() }
     single<TimeProvider> { SystemTimeProvider() }
+    single<CurrentTimeTicker> { SystemCurrentTimeTicker(get()) }
+    single<AppLaunchRepository> { SharedPreferencesAppLaunchRepository(androidApplication()) }
     single {
         Json {
             ignoreUnknownKeys = true

@@ -19,6 +19,7 @@ import com.humans.aura.features.assistant_chat.domain.ObserveChatSessionsUseCase
 import com.humans.aura.features.assistant_chat.domain.AssistantReplySpeaker
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
 import com.humans.aura.features.stopwatch.domain.ClearActivitiesUseCase
+import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveRecentActivitiesUseCase
@@ -31,6 +32,7 @@ import org.koin.dsl.module
 val useCaseModule = module {
     factory { ObserveCurrentActivityUseCase(get()) }
     factory { ObserveRecentActivitiesUseCase(get()) }
+    factory { EnsureInitialActivityUseCase(get(), get(), get()) }
     factory { LogNewActivityUseCase(get(), get()) }
     factory { PredictNextActivityTitleUseCase(get(), get()) }
     factory { UpdateCurrentActivityStatusUseCase(get()) }

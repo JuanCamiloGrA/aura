@@ -7,6 +7,8 @@ import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
 import kotlinx.coroutines.flow.Flow
 
 interface ActivityRepository {
+    suspend fun hasLoggedActivities(): Boolean
+
     fun observeCurrentActivity(): Flow<Activity?>
 
     fun observeRecentActivities(limit: Int = 5): Flow<List<Activity>>

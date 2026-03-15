@@ -2,11 +2,14 @@ package com.humans.aura.features.stopwatch.presentation
 
 import com.humans.aura.MainDispatcherRule
 import com.humans.aura.core.domain.interfaces.ActivityRepository
+import com.humans.aura.core.domain.interfaces.AppLaunchRepository
+import com.humans.aura.core.domain.interfaces.CurrentTimeTicker
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
 import com.humans.aura.features.stopwatch.domain.ActivityPrediction
 import com.humans.aura.features.stopwatch.domain.ClearActivitiesUseCase
+import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
@@ -17,6 +20,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -42,7 +46,7 @@ class StopwatchViewModelTest {
             recent = listOf(Activity(2, "Review", 1L, 61_000L, ActivityStatus.ACCURATE, false)),
             prediction = ActivityPrediction("Review", 2, 100L),
         )
-        val viewModel = createViewModel(activityRepository)
+        val viewModel = createViewModel(activityRepository, now = 3_661_000L)
         startCollecting(viewModel)
         advanceUntilIdle()
 
@@ -216,15 +220,64 @@ class StopwatchViewModelTest {
         assertEquals("", viewModel.uiState.value.draftTitle)
     }
 
+    @Test
+    fun init_bootstraps_first_activity_when_history_is_empty() = runTest {
+        val activityRepository = FakeActivityRepository(hasLoggedActivities = false)
+        val appLaunchRepository = FakeAppLaunchRepository(hasBootstrapped = false)
+        val viewModel = createViewModel(
+            activityRepository = activityRepository,
+            appLaunchRepository = appLaunchRepository,
+        )
+        startCollecting(viewModel)
+        advanceUntilIdle()
+
+        assertEquals(
+            EnsureInitialActivityUseCase.DEFAULT_INITIAL_ACTIVITY_TITLE,
+            activityRepository.loggedTitles.single(),
+        )
+        assertEquals(
+            EnsureInitialActivityUseCase.DEFAULT_INITIAL_ACTIVITY_TITLE,
+            viewModel.uiState.value.currentActivity?.title,
+        )
+        assertEquals(1, appLaunchRepository.markCompletedCalls)
+    }
+
+    @Test
+    fun running_duration_updates_with_current_time_ticks() = runTest {
+        val activityRepository = FakeActivityRepository(
+            current = Activity(1, "Deep Work", 0L, null, ActivityStatus.ACTIVE, false),
+            hasLoggedActivities = true,
+        )
+        val ticker = FakeCurrentTimeTicker(mutableListOf(0L, 61_000L))
+        val viewModel = createViewModel(
+            activityRepository = activityRepository,
+            currentTimeTicker = ticker,
+        )
+        startCollecting(viewModel)
+        advanceUntilIdle()
+
+        assertEquals("00:01:01", viewModel.uiState.value.runningDurationLabel)
+    }
+
     private fun createViewModel(
         activityRepository: FakeActivityRepository,
+        appLaunchRepository: FakeAppLaunchRepository = FakeAppLaunchRepository(hasBootstrapped = true),
+        now: Long = 0L,
+        currentTimeTicker: CurrentTimeTicker = FakeCurrentTimeTicker(mutableListOf(now)),
     ): StopwatchViewModel = StopwatchViewModel(
         observeCurrentActivityUseCase = ObserveCurrentActivityUseCase(activityRepository),
         observeRecentActivitiesUseCase = ObserveRecentActivitiesUseCase(activityRepository),
-        logNewActivityUseCase = LogNewActivityUseCase(activityRepository, FakeTimeProvider()),
-        predictNextActivityTitleUseCase = PredictNextActivityTitleUseCase(activityRepository, FakeTimeProvider()),
+        ensureInitialActivityUseCase = EnsureInitialActivityUseCase(
+            activityRepository = activityRepository,
+            appLaunchRepository = appLaunchRepository,
+            timeProvider = FakeTimeProvider(now),
+        ),
+        logNewActivityUseCase = LogNewActivityUseCase(activityRepository, FakeTimeProvider(now)),
+        predictNextActivityTitleUseCase = PredictNextActivityTitleUseCase(activityRepository, FakeTimeProvider(now)),
         updateCurrentActivityStatusUseCase = UpdateCurrentActivityStatusUseCase(activityRepository),
         clearActivitiesUseCase = ClearActivitiesUseCase(activityRepository),
+        timeProvider = FakeTimeProvider(now),
+        currentTimeTicker = currentTimeTicker,
     )
 
     private fun kotlinx.coroutines.test.TestScope.startCollecting(viewModel: StopwatchViewModel) {
@@ -239,6 +292,7 @@ class StopwatchViewModelTest {
         var prediction: ActivityPrediction? = null,
         var throwOnLog: Boolean = false,
         var logGate: CompletableDeferred<Unit>? = null,
+        private val hasLoggedActivities: Boolean = true,
     ) : ActivityRepository {
         private val currentFlow = MutableStateFlow(current)
         private val recentFlow = MutableStateFlow(recent)
@@ -246,6 +300,8 @@ class StopwatchViewModelTest {
         val updatedStatuses = mutableListOf<ActivityStatus>()
         var clearCalls = 0
         var predictCalls = 0
+
+        override suspend fun hasLoggedActivities(): Boolean = hasLoggedActivities
 
         override fun observeCurrentActivity(): Flow<Activity?> = currentFlow
         override fun observeRecentActivities(limit: Int): Flow<List<Activity>> = recentFlow
@@ -278,8 +334,29 @@ class StopwatchViewModelTest {
         }
     }
 
-    private class FakeTimeProvider : TimeProvider {
-        override fun currentTimeMillis(): Long = 0L
+    private class FakeTimeProvider(
+        private val now: Long = 0L,
+    ) : TimeProvider {
+
+        override fun currentTimeMillis(): Long = now
         override fun currentDayStartEpochMillis(): Long = 0L
+    }
+
+    private class FakeAppLaunchRepository(
+        private val hasBootstrapped: Boolean,
+    ) : AppLaunchRepository {
+        var markCompletedCalls = 0
+
+        override suspend fun hasCompletedInitialStopwatchBootstrap(): Boolean = hasBootstrapped
+
+        override suspend fun markInitialStopwatchBootstrapCompleted() {
+            markCompletedCalls += 1
+        }
+    }
+
+    private class FakeCurrentTimeTicker(
+        private val emissions: MutableList<Long>,
+    ) : CurrentTimeTicker {
+        override fun tickEvery(intervalMillis: Long) = flowOf(*emissions.toTypedArray())
     }
 }
