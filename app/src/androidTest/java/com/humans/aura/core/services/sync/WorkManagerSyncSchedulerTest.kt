@@ -4,10 +4,12 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.Configuration
+import androidx.work.NetworkType
 import androidx.work.WorkManager
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,12 +33,23 @@ class WorkManagerSyncSchedulerTest {
     }
 
     @Test
-    fun schedule_day_closure_sync_enqueues_work() {
+    fun schedule_day_closure_sync_enqueues_unique_work() {
         val scheduler = WorkManagerSyncScheduler(workManager)
 
         scheduler.scheduleDayClosureSync()
+        scheduler.scheduleDayClosureSync()
 
-        val infos = workManager.getWorkInfosByTag(SyncWorker::class.java.name).get()
+        val infos = workManager.getWorkInfosForUniqueWork(WorkManagerSyncScheduler.UNIQUE_WORK_NAME).get()
         assertEquals(1, infos.size)
+    }
+
+    @Test
+    fun schedule_day_closure_sync_builds_network_constrained_request() {
+        val scheduler = WorkManagerSyncScheduler(workManager)
+
+        val request = scheduler.buildDayClosureSyncRequest()
+
+        assertTrue(request.tags.contains(SyncWorker::class.java.name))
+        assertEquals(NetworkType.CONNECTED, request.workSpec.constraints.requiredNetworkType)
     }
 }

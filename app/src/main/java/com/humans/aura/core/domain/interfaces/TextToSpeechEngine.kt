@@ -4,4 +4,6 @@ interface TextToSpeechEngine {
     suspend fun speak(text: String)
 
     fun stop()
+
+    fun shutdown()
 }

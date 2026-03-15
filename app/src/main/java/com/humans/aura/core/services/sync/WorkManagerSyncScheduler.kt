@@ -1,5 +1,9 @@
 package com.humans.aura.core.services.sync
 
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.humans.aura.core.domain.interfaces.SyncScheduler
@@ -9,9 +13,24 @@ class WorkManagerSyncScheduler(
 ) : SyncScheduler {
 
     override fun scheduleDayClosureSync() {
-        val request = OneTimeWorkRequestBuilder<SyncWorker>()
+        workManager.enqueueUniqueWork(
+            UNIQUE_WORK_NAME,
+            ExistingWorkPolicy.KEEP,
+            buildDayClosureSyncRequest(),
+        )
+    }
+
+    internal fun buildDayClosureSyncRequest(): OneTimeWorkRequest =
+        OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build(),
+            )
             .addTag(SyncWorker::class.java.name)
             .build()
-        workManager.enqueue(request)
+
+    companion object {
+        const val UNIQUE_WORK_NAME = "day_closure_sync"
     }
 }

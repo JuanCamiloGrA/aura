@@ -6,6 +6,7 @@ import androidx.work.Data
 import androidx.work.WorkerParameters
 import com.humans.aura.features.day_summary.domain.DaySummarySyncResult
 import com.humans.aura.features.day_summary.domain.GeneratePendingDaySummariesUseCase
+import kotlinx.coroutines.CancellationException
 
 class SyncWorker(
     appContext: Context,
@@ -19,6 +20,8 @@ class SyncWorker(
             DaySummarySyncResult.RETRY -> Result.retry()
             DaySummarySyncResult.FAILURE -> Result.failure(errorData("Day summary generation failed"))
         }
+    } catch (error: CancellationException) {
+        throw error
     } catch (error: Exception) {
         Result.failure(errorData(error.message ?: "Unexpected sync failure"))
     }

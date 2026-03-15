@@ -27,12 +27,18 @@ class AndroidTextToSpeechEngine(
     override fun stop() {
         speaker.stop()
     }
+
+    override fun shutdown() {
+        speaker.shutdown()
+    }
 }
 
 interface TextToSpeechSpeaker {
     suspend fun speak(text: String)
 
     fun stop()
+
+    fun shutdown()
 }
 
 private class AndroidPlatformTextToSpeechSpeaker(
@@ -94,5 +100,10 @@ private class AndroidPlatformTextToSpeechSpeaker(
 
     override fun stop() {
         textToSpeech?.stop()
+    }
+
+    override fun shutdown() {
+        textToSpeech?.stop()
+        textToSpeech?.shutdown()
     }
 }

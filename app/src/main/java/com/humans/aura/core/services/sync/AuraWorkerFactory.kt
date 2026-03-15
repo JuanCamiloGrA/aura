@@ -15,11 +15,11 @@ class AuraWorkerFactory(
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
-        workerParams: WorkerParameters,
+        workerParameters: WorkerParameters,
     ): ListenableWorker? = when {
         supports(workerClassName) -> SyncWorker(
             appContext = appContext,
-            workerParams = workerParams,
+            workerParams = workerParameters,
             generatePendingDaySummariesUseCase = generatePendingDaySummariesUseCase,
         )
 

@@ -27,11 +27,13 @@ import com.humans.aura.features.day_summary.domain.BuildDaySummaryPromptUseCase
 import com.humans.aura.features.day_summary.domain.GeneratePendingDaySummariesUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -89,6 +91,18 @@ class SyncWorkerTest {
                 "Day summary generation failed",
                 (result as ListenableWorker.Result.Failure).outputData.getString(SyncWorker.KEY_ERROR_MESSAGE),
             )
+        }
+    }
+
+    @Test
+    fun do_work_rethrows_cancellation_exception() = runTest {
+        withTestUseCase(testUseCaseFor(aiBehavior = { throw CancellationException("cancelled") })) {
+            try {
+                buildWorker().doWork()
+                fail("Expected CancellationException")
+            } catch (_: CancellationException) {
+                Unit
+            }
         }
     }
 
