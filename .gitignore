@@ -13,3 +13,15 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Release signing artifacts
+*.jks
+*.keystore
+*.p12
+*.pem
+*.der
+*.key
+*.asc
+keystore.properties
+signing.properties
+release.properties

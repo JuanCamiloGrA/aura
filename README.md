@@ -16,6 +16,7 @@ AURA is an offline-first Android application designed to eliminate the friction 
 - [Roadmap](#roadmap)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
+- [Samsung Production APK Build Guide](#samsung-production-apk-build-guide)
 - [Running Tests](#running-tests)
 - [Contributing](#contributing)
 
@@ -193,6 +194,180 @@ Run on a connected device or emulator (API 29+):
 ```
 
 ---
+
+## Samsung Production APK Build Guide
+
+This project is now configured with a dedicated `samsungRelease` production flavor optimized for a modern Samsung phone using `arm64-v8a`, release shrinking, and release signing support.
+
+### What is optimized for Samsung
+
+- `arm64-v8a` targeting for modern Samsung flagship and recent mid/high-end devices
+- Release minification enabled with R8
+- Resource shrinking enabled
+- Non-essential dependency metadata excluded from the packaged artifact
+- Signing config can be supplied from environment variables, Gradle properties, or `local.properties`
+- Release variant name: `samsungRelease`
+
+### Prerequisites
+
+Install and prepare the following before building:
+
+- Android Studio Narwhal or later
+- JDK 11+
+- Android SDK Platform 36
+- Android SDK Build-Tools installed from Android Studio SDK Manager
+- A physical Samsung device with Developer Options enabled if you want to test the signed APK directly
+- A Gemini API key if you want AI features to work in production builds
+
+### Environment variables and secrets
+
+This app reads release-signing values from the following names:
+
+- `AURA_RELEASE_STORE_FILE`
+- `AURA_RELEASE_STORE_PASSWORD`
+- `AURA_RELEASE_KEY_ALIAS`
+- `AURA_RELEASE_KEY_PASSWORD`
+
+The Gemini key is read from:
+
+- `GEMINI_API_KEY`
+
+You can provide these values in any of these places:
+
+1. System environment variables
+2. `~/.gradle/gradle.properties`
+3. Project `local.properties`
+
+For local development, `local.properties` is usually the easiest choice and is already ignored by Git.
+
+### Option A — configure secrets in `local.properties`
+
+Add entries like these to your local `local.properties` file:
+
+```AURA/local.properties#L1-5
+GEMINI_API_KEY=your_gemini_api_key_here
+AURA_RELEASE_STORE_FILE=C:/Users/your-user/keystores/aura-release.jks
+AURA_RELEASE_STORE_PASSWORD=your_store_password_here
+AURA_RELEASE_KEY_ALIAS=aura
+AURA_RELEASE_KEY_PASSWORD=your_key_password_here
+```
+
+Use forward slashes in the keystore path on Windows to keep the path clean and portable inside Gradle.
+
+### Option B — configure secrets as environment variables on Windows
+
+PowerShell for the current session:
+
+```/dev/null/powershell.ps1#L1-5
+$env:GEMINI_API_KEY="your_gemini_api_key_here"
+$env:AURA_RELEASE_STORE_FILE="C:/Users/your-user/keystores/aura-release.jks"
+$env:AURA_RELEASE_STORE_PASSWORD="your_store_password_here"
+$env:AURA_RELEASE_KEY_ALIAS="aura"
+$env:AURA_RELEASE_KEY_PASSWORD="your_key_password_here"
+```
+
+Persist them for your user account:
+
+```/dev/null/powershell.ps1#L1-5
+[System.Environment]::SetEnvironmentVariable("GEMINI_API_KEY", "your_gemini_api_key_here", "User")
+[System.Environment]::SetEnvironmentVariable("AURA_RELEASE_STORE_FILE", "C:/Users/your-user/keystores/aura-release.jks", "User")
+[System.Environment]::SetEnvironmentVariable("AURA_RELEASE_STORE_PASSWORD", "your_store_password_here", "User")
+[System.Environment]::SetEnvironmentVariable("AURA_RELEASE_KEY_ALIAS", "aura", "User")
+[System.Environment]::SetEnvironmentVariable("AURA_RELEASE_KEY_PASSWORD", "your_key_password_here", "User")
+```
+
+After setting persistent variables, restart Android Studio so it picks them up.
+
+### Creating a release keystore in Android Studio
+
+If you do not already have a keystore:
+
+1. Open the project in Android Studio.
+2. Go to **Build > Generate Signed Bundle / APK**.
+3. Choose **APK**.
+4. Click **Create new...**
+5. Save the keystore in a safe private location such as `C:\Users\<you>\keystores\aura-release.jks`
+6. Choose:
+   - **Key store password**: strong unique password
+   - **Key alias**: `aura`
+   - **Key password**: strong unique password
+   - **Validity**: 25+ years recommended for personal long-term installs
+7. Finish the wizard once to create the file.
+
+Important:
+- Keep this keystore backed up securely.
+- Do not commit it to Git.
+- If you lose it, you lose the identity used to sign future updates of the same installed app.
+
+### Building the production APK in Android Studio
+
+Use the signed production variant:
+
+1. Open **Build Variants**
+2. For the `app` module, select:
+   - Flavor: `samsung`
+   - Build type: `release`
+3. Sync the project if Android Studio asks
+4. Go to **Build > Generate Signed Bundle / APK**
+5. Select **APK**
+6. If your signing values are already configured, point Android Studio to the same keystore
+7. Choose the `samsungRelease` variant
+8. Finish the wizard to build the signed release APK
+
+### Recommended signing options
+
+When Android Studio shows signing options, keep modern signing enabled:
+
+- V1 Signature: enabled
+- V2 Signature: enabled
+- V3 Signature: enabled
+- V4 Signature: enabled
+
+For modern Samsung phones, `V2` and above are especially important. Keeping all four enabled is the safest option for compatibility.
+
+### Output location
+
+Your production Samsung APK will be generated under the app build outputs folder, typically:
+
+```AURA/app/build/outputs/apk/samsung/release#L1-1
+AURA/app/build/outputs/apk/samsung/release/
+```
+
+Look for a file similar to:
+
+- `app-samsung-release.apk`
+
+### Installing the APK on your Samsung phone
+
+1. Copy the APK to the phone, or use Android Studio device deployment
+2. On the phone, allow installation from the source you are using
+3. Install the APK
+4. If updating an existing install, it must be signed with the same keystore as the installed version
+
+### Important note about AI features in release builds
+
+If `GEMINI_API_KEY` is not configured, the app can still build, but Gemini-backed features will not work correctly in production.
+
+For a personal non-Play-Store APK, this is acceptable if you only want local/offline flows. If you want the full feature set, configure the key before building.
+
+### Recommended release workflow
+
+For your current use case, the clean path is:
+
+1. Create one long-lived personal release keystore
+2. Store signing values in `local.properties` or user environment variables
+3. Build `samsungRelease`
+4. Install and test on your Samsung device
+5. Keep the same keystore for every future update so Android accepts upgrades
+
+### Notes for non-Play-Store distribution
+
+Since you are not publishing to Play Store right now:
+
+- APK output is the correct target for direct installation
+- You do not need Play App Signing
+- You should still keep your signing key stable for future upgrade installs
+- You should still test the release build, not only debug, because release shrinking is enabled
 
 ## Running Tests
 

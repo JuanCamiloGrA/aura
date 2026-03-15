@@ -1,6 +1,17 @@
 import org.gradle.testing.jacoco.tasks.JacocoReport
+import java.util.Properties
 
 val geminiApiKey = providers.gradleProperty("GEMINI_API_KEY").orElse("").get()
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use(::load)
+    }
+}
+
+fun propertyOrEnv(name: String): String =
+    providers.gradleProperty(name).orElse(System.getenv(name) ?: localProperties.getProperty(name) ?: "").get()
 
 plugins {
     alias(libs.plugins.android.application)
@@ -66,6 +77,16 @@ val javaDebugTree = fileTree("$buildDir/intermediates/javac/debug/compileDebugJa
 val mainSrc = "$projectDir/src/main/java"
 
 android {
+    val releaseStoreFile = propertyOrEnv("AURA_RELEASE_STORE_FILE")
+    val releaseStorePassword = propertyOrEnv("AURA_RELEASE_STORE_PASSWORD")
+    val releaseKeyAlias = propertyOrEnv("AURA_RELEASE_KEY_ALIAS")
+    val releaseKeyPassword = propertyOrEnv("AURA_RELEASE_KEY_PASSWORD")
+    val hasReleaseSigning =
+        releaseStoreFile.isNotBlank() &&
+            releaseStorePassword.isNotBlank() &&
+            releaseKeyAlias.isNotBlank() &&
+            releaseKeyPassword.isNotBlank()
+
     namespace = "com.humans.aura"
     compileSdk {
         version = release(36) {
@@ -84,13 +105,35 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
+            }
+        }
+    }
+
     buildTypes {
         debug {
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            isJniDebuggable = false
+            isCrunchPngs = true
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -104,6 +147,49 @@ android {
     buildFeatures {
         buildConfig = true
         compose = true
+    }
+
+    bundle {
+        abi {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        language {
+            enableSplit = false
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+        resources {
+            excludes += setOf(
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "/META-INF/DEPENDENCIES",
+                "/META-INF/LICENSE*",
+                "/META-INF/NOTICE*",
+            )
+        }
+    }
+
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
+    flavorDimensions += "deviceTier"
+
+    productFlavors {
+        create("samsung") {
+            dimension = "deviceTier"
+            ndk {
+                abiFilters += listOf("arm64-v8a")
+            }
+            versionNameSuffix = "-samsung"
+        }
     }
 
     testCoverage {
