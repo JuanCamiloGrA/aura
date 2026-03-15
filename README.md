@@ -24,7 +24,7 @@ AURA is an offline-first Android application designed to eliminate the friction 
 
 ## Motivation
 
-Traditional time-tracking tools create enough friction that users stop logging mid-day. The result is "ghost time" — unaccounted hours that make honest self-analysis impossible. AURA enforces two hard constraints:
+Traditional time-tracking tools create enough friction that users stop logging midday. The result is "ghost time" — unaccounted hours that make honest self-analysis impossible. AURA enforces two hard constraints:
 
 - **Time to log a new task < 1 second.**
 - **100 % offline operation guaranteed** — no crash, no delay due to missing network.
@@ -55,31 +55,31 @@ features/
 
 ### Key rules
 
-| Rule | Rationale |
-|---|---|
-| No Android or Room imports inside `domain/` | Keeps models portable for KMP migration |
-| All DB/API/Sensor access through interfaces defined in `core/domain/interfaces/` | Inversion of control, full testability |
-| External DTOs and `@Entity` classes live only in `data/` | Mappers are the sole conversion point |
-| Business logic lives exclusively in `UseCase` classes | Single responsibility, trivially unit-testable |
-| UI state is owned by `ViewModel` via `StateFlow` | Unidirectional data flow, survives configuration changes |
+| Rule                                                                             | Rationale                                                |
+|----------------------------------------------------------------------------------|----------------------------------------------------------|
+| No Android or Room imports inside `domain/`                                      | Keeps models portable for KMP migration                  |
+| All DB/API/Sensor access through interfaces defined in `core/domain/interfaces/` | Inversion of control, full testability                   |
+| External DTOs and `@Entity` classes live only in `data/`                         | Mappers are the sole conversion point                    |
+| Business logic lives exclusively in `UseCase` classes                            | Single responsibility, trivially unit-testable           |
+| UI state is owned by `ViewModel` via `StateFlow`                                 | Unidirectional data flow, survives configuration changes |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Language | Kotlin |
-| UI | Jetpack Compose + Material 3 |
-| Database | Room 2 (schema migrations included) |
-| Dependency Injection | Koin |
-| Async / Reactive | Kotlin Coroutines + StateFlow / SharedFlow |
-| Background Work | WorkManager (`CoroutineWorker`) |
-| Unit Testing | JUnit 4 · Turbine · Koin Test |
+| Layer                | Technology                                  |
+|----------------------|---------------------------------------------|
+| Language             | Kotlin                                      |
+| UI                   | Jetpack Compose + Material 3                |
+| Database             | Room 2 (schema migrations included)         |
+| Dependency Injection | Koin                                        |
+| Async / Reactive     | Kotlin Coroutines + StateFlow / SharedFlow  |
+| Background Work      | WorkManager (`CoroutineWorker`)             |
+| Unit Testing         | JUnit 4 · Turbine · Koin Test               |
 | Instrumented Testing | Espresso · Compose UI Test · Room In-Memory |
-| Coverage | Jacoco (`jacocoFullReport` Gradle task) |
-| Min SDK | 29 (Android 10) |
-| Target / Compile SDK | 36 |
+| Coverage             | Jacoco (`jacocoFullReport` Gradle task)     |
+| Min SDK              | 29 (Android 10)                             |
+| Target / Compile SDK | 36                                          |
 
 ---
 
@@ -158,11 +158,11 @@ The event is routed through the `IntentMediator` event bus — no direct couplin
 
 ## Roadmap
 
-| Milestone | Status | Description |
-|---|---|---|
-| **M0 — Foundation** | Complete | Repo, AGENTS.md, folder structure, Room DB, Koin DI |
-| **M1 — MVP** | Complete | Functional stopwatch, local prediction, daily goals, Sleep event |
-| **M2 — AI & Sync** | Planned | Gemma/Nano on-device inference, Gemini remote fallback, Cloudflare D1 sync |
+| Milestone           | Status   | Description                                                                |
+|---------------------|----------|----------------------------------------------------------------------------|
+| **M0 — Foundation** | Complete | Repo, AGENTS.md, folder structure, Room DB, Koin DI                        |
+| **M1 — MVP**        | Complete | Functional stopwatch, local prediction, daily goals, Sleep event           |
+| **M2 — AI & Sync**  | Planned  | Gemma/Nano on-device inference, Gemini remote fallback, Cloudflare D1 sync |
 
 Every entity already carries an `isSyncedToD1: Boolean` flag. The `AIEngine` interface and `SyncWorker` stub are in place. Phase 2 wires them up.
 
