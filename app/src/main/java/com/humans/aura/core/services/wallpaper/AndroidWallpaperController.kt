@@ -80,11 +80,27 @@ class AndroidWallpaperController(
             strokePaint,
         )
 
+        val panelTop = height - 1020f
+        val panelBottom = height - 340f
+        val panelLeft = 96f
+        val panelRight = width - 96f
+        val panelFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = accentColor
+            style = Paint.Style.FILL
+            alpha = if (backgroundColor == Color.BLACK) 24 else 12
+        }
+        canvas.drawRoundRect(
+            RectF(panelLeft, panelTop, panelRight, panelBottom),
+            56f,
+            56f,
+            panelFillPaint,
+        )
+
         val contentLeft = 112f
         val contentRight = width - 112f
-        val subtitleBaseline = 360f
-        val titleAreaTop = 520f
-        val titleAreaBottom = height - 420f
+        val subtitleBaseline = panelTop + 116f
+        val titleAreaTop = panelTop + 200f
+        val titleAreaBottom = panelBottom - 96f
 
         val subtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = accentColor

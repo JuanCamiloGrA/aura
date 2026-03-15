@@ -25,7 +25,7 @@ class WallpaperTitleLayoutCalculatorTest {
     }
 
     @Test
-    fun calculate_keeps_short_titles_large_and_airy() {
+    fun calculate_keeps_short_titles_large_and_bottom_anchored() {
         val layout = calculator.calculate(
             title = "Deep Work",
             maxWidthPx = 760f,
@@ -34,7 +34,7 @@ class WallpaperTitleLayoutCalculatorTest {
 
         assertEquals(listOf("Deep Work"), layout.lines)
         assertTrue(layout.textSizePx >= 140f)
-        assertTrue(layout.topOffsetPx > 200f)
+        assertTrue(layout.topOffsetPx > 650f)
     }
 
     @Test

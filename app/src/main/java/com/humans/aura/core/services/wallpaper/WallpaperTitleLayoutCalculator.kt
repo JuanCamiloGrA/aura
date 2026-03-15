@@ -146,10 +146,10 @@ internal class WallpaperTitleLayoutCalculator(
     }
 
     private fun topBiasFor(lineCount: Int): Float = when {
-        lineCount <= 1 -> 0.34f
-        lineCount == 2 -> 0.30f
-        lineCount == 3 -> 0.24f
-        else -> 0.18f
+        lineCount <= 1 -> 0.78f
+        lineCount == 2 -> 0.72f
+        lineCount == 3 -> 0.64f
+        else -> 0.56f
     }
 
     private companion object {
