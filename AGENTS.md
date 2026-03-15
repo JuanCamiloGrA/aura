@@ -7,6 +7,7 @@ Read ./DOE.md for the Scope Document / Definition of Done
 Always be proactive and make production ready code and atomic-conventional commits along all your runs.
 The architecture must have easy future compatibility for Kotlin Multiplatform.
 Always make sure to write code with a high Test Coverage and include unit tests for everything.
+Use our custom task: `./gradlew :app:jacocoFullReport` for tests.
 Procure the use of the newest versions of the packages and never use deprecated packages.
 For the UI always make an ultra minimalist modern-professional Apple Like UI mainly in gray-scale for this app.
-Style: Ultra-minimalist, modern, BIG but less elements focusing on fast UX, professional, grayscale-primary.
+Style: Ultra-minimalist, modern, BIG but fewer elements focusing on fast UX, professional, grayscale-primary.
