@@ -20,6 +20,4 @@ interface ActivityRepository {
     suspend fun predictNextTitle(nowEpochMillis: Long): ActivityPrediction?
 
     suspend fun updateCurrentActivityStatus(status: ActivityStatus)
-
-    suspend fun clearAll()
 }

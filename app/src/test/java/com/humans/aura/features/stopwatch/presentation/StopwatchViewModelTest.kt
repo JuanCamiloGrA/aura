@@ -8,7 +8,6 @@ import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
 import com.humans.aura.features.stopwatch.domain.ActivityPrediction
-import com.humans.aura.features.stopwatch.domain.ClearActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
@@ -205,22 +204,6 @@ class StopwatchViewModelTest {
     }
 
     @Test
-    fun clear_all_resets_state_and_repository() = runTest {
-        val activityRepository = FakeActivityRepository(prediction = ActivityPrediction("Review", 2, 100L))
-        val viewModel = createViewModel(activityRepository)
-        startCollecting(viewModel)
-        advanceUntilIdle()
-
-        viewModel.onDraftTitleChanged("Focus")
-        viewModel.clearAll()
-        advanceUntilIdle()
-
-        assertEquals(1, activityRepository.clearCalls)
-        assertNull(viewModel.uiState.value.prediction)
-        assertEquals("", viewModel.uiState.value.draftTitle)
-    }
-
-    @Test
     fun init_bootstraps_first_activity_when_history_is_empty() = runTest {
         val activityRepository = FakeActivityRepository(hasLoggedActivities = false)
         val appLaunchRepository = FakeAppLaunchRepository(hasBootstrapped = false)
@@ -301,7 +284,6 @@ class StopwatchViewModelTest {
         logNewActivityUseCase = LogNewActivityUseCase(activityRepository, FakeTimeProvider(now)),
         predictNextActivityTitleUseCase = PredictNextActivityTitleUseCase(activityRepository, FakeTimeProvider(now)),
         updateCurrentActivityStatusUseCase = UpdateCurrentActivityStatusUseCase(activityRepository),
-        clearActivitiesUseCase = ClearActivitiesUseCase(activityRepository),
         timeProvider = FakeTimeProvider(now),
         currentTimeTicker = currentTimeTicker,
     )
@@ -324,7 +306,6 @@ class StopwatchViewModelTest {
         private val recentFlow = MutableStateFlow(recent)
         val loggedTitles = mutableListOf<String>()
         val updatedStatuses = mutableListOf<ActivityStatus>()
-        var clearCalls = 0
         var predictCalls = 0
 
         override suspend fun hasLoggedActivities(): Boolean = hasLoggedActivities
@@ -352,12 +333,6 @@ class StopwatchViewModelTest {
 
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) {
             updatedStatuses += status
-        }
-
-        override suspend fun clearAll() {
-            clearCalls += 1
-            currentFlow.value = null
-            recentFlow.value = emptyList()
         }
     }
 

@@ -73,9 +73,6 @@ interface ActivityDao {
     )
     suspend fun updateCurrentActivityStatus(status: String): Int
 
-    @Query("DELETE FROM activities")
-    suspend fun deleteAll()
-
     @Insert
     suspend fun insertAll(activities: List<ActivityEntity>)
 }

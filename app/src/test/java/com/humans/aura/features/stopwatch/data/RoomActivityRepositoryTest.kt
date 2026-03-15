@@ -108,7 +108,6 @@ class RoomActivityRepositoryTest {
             return 1
         }
 
-        override suspend fun deleteAll() = Unit
         override suspend fun insertAll(activities: List<ActivityEntity>) = Unit
     }
 

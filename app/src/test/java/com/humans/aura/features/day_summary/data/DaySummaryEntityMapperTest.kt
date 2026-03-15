@@ -49,7 +49,7 @@ class DaySummaryEntityMapperTest {
             summaryText = """{"wins":["Deep work"],"friction_points":["Slack"],"tomorrow_pivot":"Protect the morning."}""",
             rawContextJson = "{}",
             promptVersion = "m3-day-summary-v1",
-            modelName = "gemini-2.0-flash-lite",
+            modelName = "gemini-flash-latest",
             generationStatus = SummaryGenerationStatus.COMPLETED.name,
             errorMessage = null,
             lastAttemptEpochMillis = 2000,

@@ -53,7 +53,7 @@ class GeminiAiTextGeneratorTest {
         )
 
         assertEquals("Hello back", response.text)
-        assertEquals("gemini-2.0-flash-lite", response.modelName)
+        assertEquals("gemini-flash-latest", response.modelName)
     }
 
     @Test
@@ -113,9 +113,9 @@ class GeminiAiTextGeneratorTest {
     fun model_selector_uses_expected_models() {
         val selector = GeminiModelSelector()
 
-        assertEquals("gemini-2.0-flash-lite", selector.modelFor(AiTask.DAY_SUMMARY))
-        assertEquals("gemini-2.0-flash-lite", selector.modelFor(AiTask.CHAT))
-        assertEquals("gemini-2.0-flash-lite", selector.modelFor(AiTask.TRANSLATION))
+        assertEquals("gemini-flash-latest", selector.modelFor(AiTask.DAY_SUMMARY))
+        assertEquals("gemini-flash-latest", selector.modelFor(AiTask.CHAT))
+        assertEquals("gemini-flash-lite-latest", selector.modelFor(AiTask.TRANSLATION))
     }
 
     private fun mockClient(

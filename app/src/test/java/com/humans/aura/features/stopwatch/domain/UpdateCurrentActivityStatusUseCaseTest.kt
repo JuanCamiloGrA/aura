@@ -43,7 +43,5 @@ class UpdateCurrentActivityStatusUseCaseTest {
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) {
             this.status = status
         }
-
-        override suspend fun clearAll() = Unit
     }
 }

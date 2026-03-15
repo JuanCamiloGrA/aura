@@ -93,8 +93,6 @@ class EnsureInitialActivityUseCaseTest {
         override suspend fun predictNextTitle(nowEpochMillis: Long): ActivityPrediction? = null
 
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
-
-        override suspend fun clearAll() = Unit
     }
 
     private class FakeAppLaunchRepository(

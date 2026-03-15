@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.humans.aura.core.domain.interfaces.CurrentTimeTicker
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.ActivityStatus
-import com.humans.aura.features.stopwatch.domain.ClearActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
@@ -27,7 +26,6 @@ class StopwatchViewModel(
     private val logNewActivityUseCase: LogNewActivityUseCase,
     private val predictNextActivityTitleUseCase: PredictNextActivityTitleUseCase,
     private val updateCurrentActivityStatusUseCase: UpdateCurrentActivityStatusUseCase,
-    private val clearActivitiesUseCase: ClearActivitiesUseCase,
     timeProvider: TimeProvider,
     currentTimeTicker: CurrentTimeTicker,
 ) : ViewModel() {
@@ -122,15 +120,6 @@ class StopwatchViewModel(
 
     fun markLost() {
         updateStatus(ActivityStatus.LOST)
-    }
-
-    fun clearAll() {
-        viewModelScope.launch {
-            clearActivitiesUseCase()
-            draftTitle.value = ""
-            prediction.value = null
-            isPredictionAutofilled.value = false
-        }
     }
 
     fun refreshPrediction() {

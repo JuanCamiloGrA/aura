@@ -100,7 +100,7 @@ class GeneratePendingDaySummariesUseCase(
         this is IOException || this is AiGenerationException.Retryable
 
     companion object {
-        const val MODEL_NAME = "gemini-2.0-flash-lite"
+        const val MODEL_NAME = "gemini-flash-latest"
         const val PROMPT_VERSION = "m3-day-summary-v1"
         const val SYSTEM_INSTRUCTION = "You are AURA, an honest but supportive daily reflection assistant."
     }

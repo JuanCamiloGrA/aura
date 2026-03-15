@@ -66,7 +66,6 @@ fun StopwatchSection(
         onLogNewActivity = viewModel::logNewActivity,
         onMarkInaccurate = viewModel::markInaccurate,
         onMarkLost = viewModel::markLost,
-        onClearAll = viewModel::clearAll,
     )
 }
 
@@ -79,7 +78,6 @@ fun StopwatchSection(
     onLogNewActivity: () -> Unit,
     onMarkInaccurate: () -> Unit,
     onMarkLost: () -> Unit,
-    onClearAll: () -> Unit,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     var draftFieldValue by remember { mutableStateOf(TextFieldValue(uiState.draftTitle)) }
@@ -209,7 +207,6 @@ fun StopwatchSection(
         ) {
             Timeline(
                 activities = uiState.recentActivities,
-                onClearAll = onClearAll,
             )
         }
     }
@@ -375,27 +372,13 @@ private fun StatusShortcuts(
 @Composable
 private fun Timeline(
     activities: List<Activity>,
-    onClearAll: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "TIMELINE",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            TextButton(onClick = onClearAll) {
-                Text(
-                    text = "CLEAR",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        Text(
+            text = "TIMELINE",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         Spacer(Modifier.height(4.dp))
 

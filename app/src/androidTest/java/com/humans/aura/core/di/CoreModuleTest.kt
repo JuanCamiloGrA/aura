@@ -96,7 +96,6 @@ class CoreModuleTest {
         override suspend fun logNewActivity(command: LogNewActivityCommand): Activity = error("unused")
         override suspend fun predictNextTitle(nowEpochMillis: Long): com.humans.aura.features.stopwatch.domain.ActivityPrediction? = null
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
-        override suspend fun clearAll() = Unit
     }
 
     private class FakeDailyGoalRepository : DailyGoalRepository {

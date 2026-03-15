@@ -79,10 +79,6 @@ class RoomActivityRepository(
         activityDao.updateCurrentActivityStatus(status.name)
     }
 
-    override suspend fun clearAll() {
-        activityDao.deleteAll()
-    }
-
     companion object {
         private const val DAY_DURATION_MILLIS = 86_400_000L
         private const val PREDICTION_LOOKBACK_MILLIS = DAY_DURATION_MILLIS * 7

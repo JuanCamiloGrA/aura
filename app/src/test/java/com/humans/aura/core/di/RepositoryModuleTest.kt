@@ -80,7 +80,6 @@ class RepositoryModuleTest {
         override suspend fun closeOpenActivities(timestampEpochMillis: Long): Int = 0
         override suspend fun findPrediction(historyStartEpochMillis: Long, currentEpochMillis: Long, dayDurationMillis: Long, timeOfDayEpochMillis: Long, windowMillis: Long): ActivityPredictionEntity? = null
         override suspend fun updateCurrentActivityStatus(status: String): Int = 0
-        override suspend fun deleteAll() = Unit
         override suspend fun insertAll(activities: List<ActivityEntity>) = Unit
     }
 

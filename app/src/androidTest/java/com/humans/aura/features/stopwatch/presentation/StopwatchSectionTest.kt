@@ -1,9 +1,9 @@
 package com.humans.aura.features.stopwatch.presentation
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -33,7 +33,6 @@ class StopwatchSectionTest {
         var logged = 0
         var inaccurate = 0
         var lost = 0
-        var cleared = 0
         var refreshed = 0
 
         composeRule.setContent {
@@ -59,7 +58,6 @@ class StopwatchSectionTest {
                     onLogNewActivity = { logged += 1 },
                     onMarkInaccurate = { inaccurate += 1 },
                     onMarkLost = { lost += 1 },
-                    onClearAll = { cleared += 1 },
                 )
             }
         }
@@ -70,14 +68,13 @@ class StopwatchSectionTest {
         composeRule.onNodeWithText("REFRESH").performClick()
         composeRule.onNodeWithTag("mark_inaccurate_button").performClick()
         composeRule.onNodeWithTag("mark_lost_button").performClick()
-        composeRule.onNodeWithText("CLEAR").performClick()
-        composeRule.onNodeWithText("TRACKING").assertExists()
-        composeRule.onNodeWithText("Focus").assertExists()
+        composeRule.onNodeWithText("TRACKING").assertIsDisplayed()
+        composeRule.onNodeWithText("Focus").assertIsDisplayed()
+        composeRule.onAllNodesWithText("CLEAR").assertCountEquals(0)
 
         assertEquals(1, logged)
         assertEquals(1, inaccurate)
         assertEquals(1, lost)
-        assertEquals(1, cleared)
         assertEquals(1, refreshed)
     }
 
@@ -93,7 +90,6 @@ class StopwatchSectionTest {
                     onLogNewActivity = {},
                     onMarkInaccurate = {},
                     onMarkLost = {},
-                    onClearAll = {},
                 )
             }
         }
@@ -122,7 +118,6 @@ class StopwatchSectionTest {
                     onLogNewActivity = {},
                     onMarkInaccurate = {},
                     onMarkLost = {},
-                    onClearAll = {},
                 )
             }
         }
@@ -147,7 +142,6 @@ class StopwatchSectionTest {
                     onLogNewActivity = {},
                     onMarkInaccurate = {},
                     onMarkLost = {},
-                    onClearAll = {},
                 )
             }
         }
@@ -182,7 +176,6 @@ class StopwatchSectionTest {
                     onLogNewActivity = {},
                     onMarkInaccurate = {},
                     onMarkLost = {},
-                    onClearAll = {},
                 )
             }
         }
@@ -190,6 +183,6 @@ class StopwatchSectionTest {
         composeRule.onNodeWithTag("stopwatch_input").performTextReplacement("Write")
 
         assertEquals("Write", draft)
-        composeRule.onNodeWithTag("stopwatch_input").assertExists()
+        composeRule.onNodeWithTag("stopwatch_input").assertIsDisplayed()
     }
 }

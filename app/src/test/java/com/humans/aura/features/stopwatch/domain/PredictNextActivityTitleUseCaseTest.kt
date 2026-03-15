@@ -37,7 +37,6 @@ class PredictNextActivityTitleUseCaseTest {
         }
 
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
-        override suspend fun clearAll() = Unit
     }
 
     private class FakeTimeProvider(

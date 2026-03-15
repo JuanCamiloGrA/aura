@@ -41,7 +41,6 @@ import com.humans.aura.features.day_summary.domain.ObserveLatestSummaryUseCase
 import com.humans.aura.features.day_summary.domain.ObserveRecentSummariesUseCase
 import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
 import com.humans.aura.features.day_summary.data.DaySummaryReflectionParser
-import com.humans.aura.features.stopwatch.domain.ClearActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.ActivityPrediction
 import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
@@ -112,7 +111,6 @@ class UseCaseModuleTest {
                 get<LogNewActivityUseCase>()
                 get<PredictNextActivityTitleUseCase>()
                 get<UpdateCurrentActivityStatusUseCase>()
-                get<ClearActivitiesUseCase>()
                 get<ObserveTodayGoalUseCase>()
                 get<ObserveTodayActivitiesUseCase>()
                 get<SaveTodayGoalUseCase>()
@@ -150,7 +148,6 @@ class UseCaseModuleTest {
         override suspend fun logNewActivity(command: LogNewActivityCommand): Activity = error("unused")
         override suspend fun predictNextTitle(nowEpochMillis: Long): ActivityPrediction? = null
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
-        override suspend fun clearAll() = Unit
     }
 
     private class FakeAppLaunchRepository : AppLaunchRepository {
