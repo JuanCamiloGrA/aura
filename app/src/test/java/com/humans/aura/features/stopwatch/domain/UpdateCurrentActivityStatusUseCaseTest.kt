@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UpdateCurrentActivityStatusUseCaseTest {
@@ -21,12 +20,12 @@ class UpdateCurrentActivityStatusUseCaseTest {
     }
 
     @Test
-    fun invoke_rejects_active_status() = runTest {
-        val useCase = UpdateCurrentActivityStatusUseCase(FakeActivityRepository())
+    fun invoke_allows_active_status_for_label_removal() = runTest {
+        val repository = FakeActivityRepository()
 
-        val error = runCatching { useCase(ActivityStatus.ACTIVE) }.exceptionOrNull()
+        UpdateCurrentActivityStatusUseCase(repository).invoke(ActivityStatus.ACTIVE)
 
-        assertTrue(error is IllegalArgumentException)
+        assertEquals(ActivityStatus.ACTIVE, repository.status)
     }
 
     private class FakeActivityRepository : ActivityRepository {

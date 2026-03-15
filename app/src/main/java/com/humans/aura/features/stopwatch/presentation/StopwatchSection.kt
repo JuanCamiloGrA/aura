@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
+import com.humans.aura.features.voice.presentation.VoiceCaptureButton
 import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
 import java.time.ZoneId
@@ -55,6 +56,12 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun StopwatchSection(
     viewModel: StopwatchViewModel = koinViewModel(),
+    voiceCaptureButton: @Composable ((String) -> Unit) -> Unit = { onSend ->
+        VoiceCaptureButton(
+            onSendTranscript = onSend,
+            idleLabel = "HOLD TO TALK FOR NEW ACTIVITY",
+        )
+    },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -64,8 +71,11 @@ fun StopwatchSection(
         onUsePrediction = viewModel::usePrediction,
         onRefreshPrediction = viewModel::refreshPrediction,
         onLogNewActivity = viewModel::logNewActivity,
+        onLogVoiceActivity = viewModel::logVoiceActivity,
         onMarkInaccurate = viewModel::markInaccurate,
         onMarkLost = viewModel::markLost,
+        onClearHonestyLabel = viewModel::clearHonestyLabel,
+        voiceCaptureButton = { voiceCaptureButton(viewModel::logVoiceActivity) },
     )
 }
 
@@ -76,8 +86,16 @@ fun StopwatchSection(
     onUsePrediction: () -> Unit,
     onRefreshPrediction: () -> Unit,
     onLogNewActivity: () -> Unit,
+    onLogVoiceActivity: (String) -> Unit,
     onMarkInaccurate: () -> Unit,
     onMarkLost: () -> Unit,
+    onClearHonestyLabel: () -> Unit,
+    voiceCaptureButton: @Composable () -> Unit = {
+        VoiceCaptureButton(
+            onSendTranscript = onLogVoiceActivity,
+            idleLabel = "HOLD TO TALK FOR NEW ACTIVITY",
+        )
+    },
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     var draftFieldValue by remember { mutableStateOf(TextFieldValue(uiState.draftTitle)) }
@@ -156,6 +174,14 @@ fun StopwatchSection(
                 )
             }
 
+            AnimatedVisibility(
+                visible = uiState.isVoiceLoggingEnabled,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                voiceCaptureButton()
+            }
+
             // ── Subtle prediction actions ───────────────────────────────
             AnimatedVisibility(
                 visible = uiState.prediction != null,
@@ -193,10 +219,14 @@ fun StopwatchSection(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically(),
         ) {
-            StatusShortcuts(
-                onMarkInaccurate = onMarkInaccurate,
-                onMarkLost = onMarkLost,
-            )
+            uiState.currentActivity?.let { currentActivity ->
+                StatusShortcuts(
+                    currentStatus = currentActivity.status,
+                    onMarkInaccurate = onMarkInaccurate,
+                    onMarkLost = onMarkLost,
+                    onClearHonestyLabel = onClearHonestyLabel,
+                )
+            }
         }
 
         // ── Timeline ────────────────────────────────────────────────────
@@ -330,9 +360,14 @@ private fun GhostTextField(
 
 @Composable
 private fun StatusShortcuts(
+    currentStatus: ActivityStatus,
     onMarkInaccurate: () -> Unit,
     onMarkLost: () -> Unit,
+    onClearHonestyLabel: () -> Unit,
 ) {
+    val showClearLabelAction = currentStatus == ActivityStatus.INACCURATE ||
+        currentStatus == ActivityStatus.LOST
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -363,6 +398,22 @@ private fun StatusShortcuts(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        AnimatedVisibility(
+            visible = showClearLabelAction,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
+        ) {
+            TextButton(
+                onClick = onClearHonestyLabel,
+                modifier = Modifier.testTag("clear_honesty_label_button"),
+            ) {
+                Text(
+                    text = "CLEAR LABEL",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

@@ -137,6 +137,21 @@ class StopwatchViewModelTest {
     }
 
     @Test
+    fun log_voice_activity_uses_transcript_and_resets_logging_state() = runTest {
+        val activityRepository = FakeActivityRepository(prediction = null)
+        val viewModel = createViewModel(activityRepository)
+        startCollecting(viewModel)
+        advanceUntilIdle()
+
+        viewModel.logVoiceActivity("  Walk the dog  ")
+        advanceUntilIdle()
+
+        assertEquals("Walk the dog", activityRepository.loggedTitles.single())
+        assertFalse(viewModel.uiState.value.isLogging)
+        assertEquals(true, viewModel.uiState.value.isVoiceLoggingEnabled)
+    }
+
+    @Test
     fun log_new_activity_with_blank_input_and_missing_prediction_does_not_log() = runTest {
         val activityRepository = FakeActivityRepository(prediction = null)
         val viewModel = createViewModel(activityRepository)
@@ -198,9 +213,13 @@ class StopwatchViewModelTest {
 
         viewModel.markInaccurate()
         viewModel.markLost()
+        viewModel.clearHonestyLabel()
         advanceUntilIdle()
 
-        assertEquals(listOf(ActivityStatus.INACCURATE, ActivityStatus.LOST), activityRepository.updatedStatuses)
+        assertEquals(
+            listOf(ActivityStatus.INACCURATE, ActivityStatus.LOST, ActivityStatus.ACTIVE),
+            activityRepository.updatedStatuses,
+        )
     }
 
     @Test

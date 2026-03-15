@@ -7,7 +7,6 @@ class UpdateCurrentActivityStatusUseCase(
     private val activityRepository: ActivityRepository,
 ) {
     suspend operator fun invoke(status: ActivityStatus) {
-        require(status != ActivityStatus.ACTIVE) { "Current activity status must be terminal" }
         activityRepository.updateCurrentActivityStatus(status)
     }
 }

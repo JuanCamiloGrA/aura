@@ -70,6 +70,7 @@ class StopwatchViewModel(
             } ?: EMPTY_DURATION_LABEL,
             isLoading = false,
             isLogging = currentDraftState.isLogging,
+            isVoiceLoggingEnabled = !currentDraftState.isLogging,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -95,13 +96,21 @@ class StopwatchViewModel(
     }
 
     fun logNewActivity() {
+        logNewActivityWithTitle(draftTitle.value.ifBlank {
+            prediction.value?.title.orEmpty()
+        })
+    }
+
+    fun logVoiceActivity(title: String) {
+        logNewActivityWithTitle(title)
+    }
+
+    private fun logNewActivityWithTitle(rawTitle: String) {
         if (isLogging.value) return
 
         viewModelScope.launch {
             isLogging.value = true
-            val titleToLog = draftTitle.value.ifBlank {
-                prediction.value?.title.orEmpty()
-            }
+            val titleToLog = rawTitle.trim()
             runCatching {
                 logNewActivityUseCase(titleToLog)
             }.onSuccess {
@@ -120,6 +129,10 @@ class StopwatchViewModel(
 
     fun markLost() {
         updateStatus(ActivityStatus.LOST)
+    }
+
+    fun clearHonestyLabel() {
+        updateStatus(ActivityStatus.ACTIVE)
     }
 
     fun refreshPrediction() {

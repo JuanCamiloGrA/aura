@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.humans.aura.core.domain.models.Activity
@@ -33,6 +34,7 @@ class StopwatchSectionTest {
         var logged = 0
         var inaccurate = 0
         var lost = 0
+        var cleared = 0
         var refreshed = 0
 
         composeRule.setContent {
@@ -56,8 +58,11 @@ class StopwatchSectionTest {
                     },
                     onRefreshPrediction = { refreshed += 1 },
                     onLogNewActivity = { logged += 1 },
+                    onLogVoiceActivity = {},
                     onMarkInaccurate = { inaccurate += 1 },
                     onMarkLost = { lost += 1 },
+                    onClearHonestyLabel = { cleared += 1 },
+                    voiceCaptureButton = { Text("HOLD TO TALK FOR NEW ACTIVITY") },
                 )
             }
         }
@@ -68,13 +73,16 @@ class StopwatchSectionTest {
         composeRule.onNodeWithText("REFRESH").performClick()
         composeRule.onNodeWithTag("mark_inaccurate_button").performClick()
         composeRule.onNodeWithTag("mark_lost_button").performClick()
+        composeRule.onAllNodesWithTag("clear_honesty_label_button").assertCountEquals(0)
         composeRule.onNodeWithText("TRACKING").assertIsDisplayed()
         composeRule.onNodeWithText("Focus").assertIsDisplayed()
+        composeRule.onNodeWithText("HOLD TO TALK FOR NEW ACTIVITY").assertIsDisplayed()
         composeRule.onAllNodesWithText("CLEAR").assertCountEquals(0)
 
         assertEquals(1, logged)
         assertEquals(1, inaccurate)
         assertEquals(1, lost)
+        assertEquals(0, cleared)
         assertEquals(1, refreshed)
     }
 
@@ -88,8 +96,11 @@ class StopwatchSectionTest {
                     onUsePrediction = {},
                     onRefreshPrediction = {},
                     onLogNewActivity = {},
+                    onLogVoiceActivity = {},
                     onMarkInaccurate = {},
                     onMarkLost = {},
+                    onClearHonestyLabel = {},
+                    voiceCaptureButton = { Text("HOLD TO TALK FOR NEW ACTIVITY") },
                 )
             }
         }
@@ -98,8 +109,10 @@ class StopwatchSectionTest {
         composeRule.onNodeWithText("No open activity").assertIsDisplayed()
         composeRule.onNodeWithText("What are you doing next?").assertIsDisplayed()
         composeRule.onNodeWithTag("new_activity_button").assertIsNotEnabled()
+        composeRule.onNodeWithText("HOLD TO TALK FOR NEW ACTIVITY").assertIsDisplayed()
         composeRule.onAllNodesWithTag("mark_inaccurate_button").assertCountEquals(0)
         composeRule.onAllNodesWithTag("mark_lost_button").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("clear_honesty_label_button").assertCountEquals(0)
     }
 
     @Test
@@ -116,13 +129,17 @@ class StopwatchSectionTest {
                     onUsePrediction = {},
                     onRefreshPrediction = {},
                     onLogNewActivity = {},
+                    onLogVoiceActivity = {},
                     onMarkInaccurate = {},
                     onMarkLost = {},
+                    onClearHonestyLabel = {},
+                    voiceCaptureButton = {},
                 )
             }
         }
 
         composeRule.onNodeWithTag("new_activity_button").assertIsNotEnabled()
+        composeRule.onAllNodesWithText("HOLD TO TALK FOR NEW ACTIVITY").assertCountEquals(0)
     }
 
     @Test
@@ -140,8 +157,11 @@ class StopwatchSectionTest {
                     onUsePrediction = {},
                     onRefreshPrediction = {},
                     onLogNewActivity = {},
+                    onLogVoiceActivity = {},
                     onMarkInaccurate = {},
                     onMarkLost = {},
+                    onClearHonestyLabel = {},
+                    voiceCaptureButton = { Text("HOLD TO TALK FOR NEW ACTIVITY") },
                 )
             }
         }
@@ -150,8 +170,37 @@ class StopwatchSectionTest {
         composeRule.onAllNodesWithText("INACCURATE").assertCountEquals(2)
         composeRule.onNodeWithText("Review", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("now", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("clear_honesty_label_button").assertIsDisplayed()
         composeRule.onAllNodesWithTag("use_prediction_button").assertCountEquals(0)
         composeRule.onAllNodesWithText("REFRESH").assertCountEquals(0)
+    }
+
+    @Test
+    fun section_shows_remove_label_only_for_inaccurate_or_lost_status() {
+        var cleared = 0
+
+        composeRule.setContent {
+            AuraTheme {
+                StopwatchSection(
+                    uiState = StopwatchUiState(
+                        currentActivity = Activity(1, "Build", 0L, null, ActivityStatus.LOST, false),
+                    ),
+                    onDraftTitleChanged = {},
+                    onUsePrediction = {},
+                    onRefreshPrediction = {},
+                    onLogNewActivity = {},
+                    onLogVoiceActivity = {},
+                    onMarkInaccurate = {},
+                    onMarkLost = {},
+                    onClearHonestyLabel = { cleared += 1 },
+                    voiceCaptureButton = { Text("HOLD TO TALK FOR NEW ACTIVITY") },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("clear_honesty_label_button").assertIsDisplayed().performClick()
+
+        assertEquals(1, cleared)
     }
 
     @Test
@@ -174,8 +223,11 @@ class StopwatchSectionTest {
                     onUsePrediction = {},
                     onRefreshPrediction = {},
                     onLogNewActivity = {},
+                    onLogVoiceActivity = {},
                     onMarkInaccurate = {},
                     onMarkLost = {},
+                    onClearHonestyLabel = {},
+                    voiceCaptureButton = { Text("HOLD TO TALK FOR NEW ACTIVITY") },
                 )
             }
         }
@@ -184,5 +236,32 @@ class StopwatchSectionTest {
 
         assertEquals("Write", draft)
         composeRule.onNodeWithTag("stopwatch_input").assertIsDisplayed()
+    }
+
+    @Test
+    fun voice_new_activity_control_shows_permission_prompt_state() {
+        composeRule.setContent {
+            AuraTheme {
+                StopwatchSection(
+                    uiState = StopwatchUiState(
+                        draftTitle = "Focus",
+                        isVoiceLoggingEnabled = true,
+                    ),
+                    onDraftTitleChanged = {},
+                    onUsePrediction = {},
+                    onRefreshPrediction = {},
+                    onLogNewActivity = {},
+                    onLogVoiceActivity = {},
+                    onMarkInaccurate = {},
+                    onMarkLost = {},
+                    onClearHonestyLabel = {},
+                    voiceCaptureButton = {
+                        Text("Enable microphone access")
+                    },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Enable microphone access").assertIsDisplayed()
     }
 }
