@@ -32,7 +32,7 @@ class EnsureInitialActivityUseCaseTest {
     }
 
     @Test
-    fun invoke_skips_logging_when_bootstrap_already_completed() = runTest {
+    fun invoke_logs_default_activity_when_history_is_empty_even_if_bootstrap_already_completed() = runTest {
         val activityRepository = FakeActivityRepository(hasLoggedActivities = false)
         val appLaunchRepository = FakeAppLaunchRepository(hasBootstrapped = true)
         val useCase = EnsureInitialActivityUseCase(
@@ -43,8 +43,8 @@ class EnsureInitialActivityUseCaseTest {
 
         val result = useCase()
 
-        assertNull(result)
-        assertEquals(emptyList<String>(), activityRepository.loggedTitles)
+        assertEquals(EnsureInitialActivityUseCase.DEFAULT_INITIAL_ACTIVITY_TITLE, result?.title)
+        assertEquals(EnsureInitialActivityUseCase.DEFAULT_INITIAL_ACTIVITY_TITLE, activityRepository.loggedTitles.single())
         assertEquals(0, appLaunchRepository.markCompletedCalls)
     }
 

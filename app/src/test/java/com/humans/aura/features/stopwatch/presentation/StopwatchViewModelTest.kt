@@ -239,6 +239,10 @@ class StopwatchViewModelTest {
             EnsureInitialActivityUseCase.DEFAULT_INITIAL_ACTIVITY_TITLE,
             viewModel.uiState.value.currentActivity?.title,
         )
+        assertEquals(
+            EnsureInitialActivityUseCase.DEFAULT_INITIAL_ACTIVITY_TITLE,
+            viewModel.uiState.value.recentActivities.single().title,
+        )
         assertEquals(1, appLaunchRepository.markCompletedCalls)
     }
 
@@ -248,7 +252,7 @@ class StopwatchViewModelTest {
             current = Activity(1, "Deep Work", 0L, null, ActivityStatus.ACTIVE, false),
             hasLoggedActivities = true,
         )
-        val ticker = FakeCurrentTimeTicker(mutableListOf(0L, 61_000L))
+        val ticker = FakeCurrentTimeTicker(mutableListOf(0L, 61_125L))
         val viewModel = createViewModel(
             activityRepository = activityRepository,
             currentTimeTicker = ticker,
@@ -257,6 +261,28 @@ class StopwatchViewModelTest {
         advanceUntilIdle()
 
         assertEquals("00:01:01", viewModel.uiState.value.runningDurationLabel)
+    }
+
+    @Test
+    fun init_bootstraps_first_activity_when_history_is_empty_even_if_bootstrap_flag_is_already_set() = runTest {
+        val activityRepository = FakeActivityRepository(hasLoggedActivities = false)
+        val appLaunchRepository = FakeAppLaunchRepository(hasBootstrapped = true)
+        val viewModel = createViewModel(
+            activityRepository = activityRepository,
+            appLaunchRepository = appLaunchRepository,
+        )
+        startCollecting(viewModel)
+        advanceUntilIdle()
+
+        assertEquals(
+            EnsureInitialActivityUseCase.DEFAULT_INITIAL_ACTIVITY_TITLE,
+            viewModel.uiState.value.currentActivity?.title,
+        )
+        assertEquals(
+            EnsureInitialActivityUseCase.DEFAULT_INITIAL_ACTIVITY_TITLE,
+            viewModel.uiState.value.recentActivities.single().title,
+        )
+        assertEquals(0, appLaunchRepository.markCompletedCalls)
     }
 
     private fun createViewModel(
@@ -315,6 +341,7 @@ class StopwatchViewModelTest {
             loggedTitles += command.title
             return Activity(1, command.title, command.timestampEpochMillis, null, ActivityStatus.ACTIVE, false).also {
                 currentFlow.value = it
+                recentFlow.value = listOf(it)
             }
         }
 

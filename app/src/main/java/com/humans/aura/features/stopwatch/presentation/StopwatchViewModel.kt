@@ -38,7 +38,7 @@ class StopwatchViewModel(
     private val isLogging = MutableStateFlow(false)
     private val nowEpochMillis = currentTimeTicker.tickEvery(RUNNING_DURATION_TICK_MILLIS).stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
+        started = SharingStarted.Eagerly,
         initialValue = timeProvider.currentTimeMillis(),
     )
     private val draftState = combine(
@@ -69,13 +69,13 @@ class StopwatchViewModel(
             isPredictionAutofilled = currentDraftState.isPredictionAutofilled,
             runningDurationLabel = currentActivity?.let { activity ->
                 formatRunningDuration(activity, currentNowEpochMillis)
-            } ?: "00:00:00",
+            } ?: EMPTY_DURATION_LABEL,
             isLoading = false,
             isLogging = currentDraftState.isLogging,
         )
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
+        started = SharingStarted.Eagerly,
         initialValue = StopwatchUiState(isLoading = true),
     )
 
@@ -161,10 +161,10 @@ class StopwatchViewModel(
         currentNowEpochMillis: Long,
     ): String {
         val endMillis = activity.endTimeEpochMillis ?: currentNowEpochMillis
-        val totalSeconds = ((endMillis - activity.startTimeEpochMillis).coerceAtLeast(0) / 1000L)
-        val hours = totalSeconds / 3600
-        val minutes = (totalSeconds % 3600) / 60
-        val seconds = totalSeconds % 60
+        val totalSeconds = ((endMillis - activity.startTimeEpochMillis).coerceAtLeast(0) / 1_000L)
+        val hours = totalSeconds / 3_600L
+        val minutes = (totalSeconds % 3_600L) / 60L
+        val seconds = totalSeconds % 60L
         return String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
     }
 
@@ -177,5 +177,6 @@ class StopwatchViewModel(
 
     private companion object {
         private const val RUNNING_DURATION_TICK_MILLIS = 1_000L
+        private const val EMPTY_DURATION_LABEL = "00:00:00"
     }
 }

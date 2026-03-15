@@ -11,12 +11,11 @@ class EnsureInitialActivityUseCase(
     private val timeProvider: TimeProvider,
 ) {
     suspend operator fun invoke(): Activity? {
-        if (appLaunchRepository.hasCompletedInitialStopwatchBootstrap()) {
-            return null
-        }
-
+        val hasCompletedBootstrap = appLaunchRepository.hasCompletedInitialStopwatchBootstrap()
         if (activityRepository.hasLoggedActivities()) {
-            appLaunchRepository.markInitialStopwatchBootstrapCompleted()
+            if (!hasCompletedBootstrap) {
+                appLaunchRepository.markInitialStopwatchBootstrapCompleted()
+            }
             return null
         }
 
@@ -27,7 +26,9 @@ class EnsureInitialActivityUseCase(
             ),
         )
 
-        appLaunchRepository.markInitialStopwatchBootstrapCompleted()
+        if (!hasCompletedBootstrap) {
+            appLaunchRepository.markInitialStopwatchBootstrapCompleted()
+        }
         return initialActivity
     }
 
