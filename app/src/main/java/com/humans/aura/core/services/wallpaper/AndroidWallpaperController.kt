@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.graphics.Typeface
 import com.humans.aura.core.domain.interfaces.WallpaperController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -79,25 +80,45 @@ class AndroidWallpaperController(
             strokePaint,
         )
 
+        val contentLeft = 112f
+        val contentRight = width - 112f
+        val subtitleBaseline = 360f
+        val titleAreaTop = 520f
+        val titleAreaBottom = height - 420f
+
         val subtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = accentColor
-            textSize = 40f
+            textSize = 38f
             alpha = if (backgroundColor == Color.BLACK) 180 else 150
-            letterSpacing = 0.2f
+            letterSpacing = 0.18f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         }
-        canvas.drawText(subtitle.uppercase(), 112f, 360f, subtitlePaint)
+        canvas.drawText(subtitle.uppercase(), contentLeft, subtitleBaseline, subtitlePaint)
 
         val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = accentColor
-            textSize = 124f
             isFakeBoldText = true
+            isSubpixelText = true
+            letterSpacing = -0.02f
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
         }
-        val lineSpacing = 138f
-        title.trim().split(" ").chunked(2).map { it.joinToString(" ") }
-            .take(3)
-            .forEachIndexed { index, line ->
-                canvas.drawText(line, 112f, 620f + (index * lineSpacing), titlePaint)
-            }
+
+        val titleLayout = WallpaperTitleLayoutCalculator { text, textSizePx ->
+            titlePaint.textSize = textSizePx
+            titlePaint.measureText(text)
+        }.calculate(
+            title = title,
+            maxWidthPx = contentRight - contentLeft,
+            maxHeightPx = titleAreaBottom - titleAreaTop,
+        )
+
+        titlePaint.textSize = titleLayout.textSizePx
+        val fontMetrics = titlePaint.fontMetrics
+        var baseline = titleAreaTop + titleLayout.topOffsetPx - fontMetrics.ascent
+        titleLayout.lines.forEach { line ->
+            canvas.drawText(line, contentLeft, baseline, titlePaint)
+            baseline += titleLayout.lineHeightPx
+        }
 
         return bitmap
     }
