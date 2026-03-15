@@ -118,6 +118,40 @@ class GeminiAiTextGeneratorTest {
         assertEquals("gemini-flash-lite-latest", selector.modelFor(AiTask.TRANSLATION))
     }
 
+    @Test
+    fun generate_fails_when_api_key_is_missing() = runTest {
+        val generator = GeminiAiTextGenerator(
+            apiKeyProvider = GeminiApiKeyProvider { "   " },
+            modelSelector = GeminiModelSelector(),
+            json = json,
+            client = mockClient(HttpStatusCode.OK, "{}"),
+        )
+
+        val error = runCatching {
+            generator.generate(AiRequest(AiTask.CHAT, "system", "prompt"))
+        }.exceptionOrNull()
+
+        assertTrue(error is AiGenerationException.NonRetryable)
+        assertEquals("Gemini API key is missing", error?.message)
+    }
+
+    @Test
+    fun generate_fails_when_response_text_is_empty() = runTest {
+        val generator = GeminiAiTextGenerator(
+            apiKeyProvider = GeminiApiKeyProvider { "api-key" },
+            modelSelector = GeminiModelSelector(),
+            json = json,
+            client = mockClient(HttpStatusCode.OK, "{\"candidates\":[{\"content\":{\"parts\":[]}}]}"),
+        )
+
+        val error = runCatching {
+            generator.generate(AiRequest(AiTask.CHAT, "system", "prompt"))
+        }.exceptionOrNull()
+
+        assertTrue(error is AiGenerationException.NonRetryable)
+        assertEquals("Gemini returned an empty response", error?.message)
+    }
+
     private fun mockClient(
         status: HttpStatusCode,
         body: String,

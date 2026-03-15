@@ -32,12 +32,16 @@ class GeminiAiTextGenerator(
 ) : AiTextGenerator {
 
     override suspend fun generate(request: AiRequest): AiResponse {
+        val apiKey = apiKeyProvider.requireApiKey().trim()
+        if (apiKey.isBlank()) {
+            throw AiGenerationException.NonRetryable("Gemini API key is missing")
+        }
         val modelName = modelSelector.modelFor(request.task)
         val response: GeminiGenerateContentResponse = try {
             client.post(
                 urlString = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent",
             ) {
-                header("x-goog-api-key", apiKeyProvider.requireApiKey())
+                header("x-goog-api-key", apiKey)
                 contentType(ContentType.Application.Json)
                 setBody(
                     GeminiGenerateContentRequest(
@@ -82,6 +86,9 @@ class GeminiAiTextGenerator(
         }
 
         val text = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text.orEmpty()
+        if (text.isBlank()) {
+            throw AiGenerationException.NonRetryable("Gemini returned an empty response")
+        }
         return AiResponse(text = text, modelName = modelName)
     }
 }

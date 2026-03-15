@@ -26,6 +26,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -122,6 +124,11 @@ fun AssistantChatSection(
                 )
             }
         }
+
+        GeminiConfigurationCard(
+            status = uiState.status,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        )
 
         // ── Messages / Empty State ──────────────────────────────────────
         Box(
@@ -270,6 +277,56 @@ fun AssistantChatSection(
 
             // ── Voice Button Slot ───────────────────────────────────────
             voiceCaptureButton()
+        }
+    }
+}
+
+@Composable
+private fun GeminiConfigurationCard(
+    status: AssistantChatStatus,
+    modifier: Modifier = Modifier,
+) {
+    val configured = status.isGeminiConfigured
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("assistant_chat_gemini_status"),
+        colors = CardDefaults.cardColors(
+            containerColor = if (configured) {
+                MaterialTheme.colorScheme.surfaceVariant
+            } else {
+                MaterialTheme.colorScheme.errorContainer
+            },
+        ),
+        shape = RoundedCornerShape(18.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = if (configured) "Gemini connected" else "Gemini key missing",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = if (configured) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onErrorContainer
+                },
+            )
+            Text(
+                text = if (configured) {
+                    "${status.providerLabel} is configured. Chat and summaries can reach the model."
+                } else {
+                    "Add `GEMINI_API_KEY` to Gradle/local properties so chat and summaries can respond."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (configured) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onErrorContainer
+                },
+            )
         }
     }
 }

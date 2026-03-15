@@ -1,17 +1,25 @@
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.util.Properties
 
-val geminiApiKey = providers.gradleProperty("GEMINI_API_KEY").orElse("").get()
-
-val localProperties = Properties().apply {
-    val file = rootProject.file("local.properties")
+fun loadOptionalPropertiesFile(name: String): Properties = Properties().apply {
+    val file = rootProject.file(name)
     if (file.exists()) {
         file.inputStream().use(::load)
     }
 }
 
+val localProperties = loadOptionalPropertiesFile("local.properties")
+val keystoreProperties = loadOptionalPropertiesFile("keystore.properties")
+
 fun propertyOrEnv(name: String): String =
-    providers.gradleProperty(name).orElse(System.getenv(name) ?: localProperties.getProperty(name) ?: "").get()
+    providers.gradleProperty(name).orElse(
+        System.getenv(name)
+            ?: localProperties.getProperty(name)
+            ?: keystoreProperties.getProperty(name)
+            ?: "",
+    ).get()
+
+val geminiApiKey = propertyOrEnv("GEMINI_API_KEY")
 
 plugins {
     alias(libs.plugins.android.application)

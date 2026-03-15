@@ -4,6 +4,7 @@ import androidx.work.WorkManager
 import com.humans.aura.core.domain.interfaces.AiTextGenerator
 import com.humans.aura.core.domain.interfaces.AppLaunchRepository
 import com.humans.aura.core.domain.interfaces.CurrentTimeTicker
+import com.humans.aura.core.domain.interfaces.GeminiConfigurationRepository
 import com.humans.aura.core.domain.interfaces.IntentMediator
 import com.humans.aura.core.domain.interfaces.SpeechRecognizer
 import com.humans.aura.core.domain.interfaces.SyncScheduler
@@ -46,7 +47,9 @@ val coreModule = module {
     single { WorkManager.getInstance(androidApplication()) }
     single<SyncScheduler> { WorkManagerSyncScheduler(get()) }
     single<WallpaperController> { AndroidWallpaperController(androidApplication()) }
-    single<GeminiApiKeyProvider> { BuildConfigGeminiApiKeyProvider() }
+    single<BuildConfigGeminiApiKeyProvider> { BuildConfigGeminiApiKeyProvider() }
+    single<GeminiApiKeyProvider> { get<BuildConfigGeminiApiKeyProvider>() }
+    single<GeminiConfigurationRepository> { get<BuildConfigGeminiApiKeyProvider>() }
     single { GeminiModelSelector() }
     single<AiTextGenerator> { GeminiAiTextGenerator(get(), get(), get()) }
     single<SpeechRecognizer> { AndroidSpeechRecognizer(androidApplication()) }

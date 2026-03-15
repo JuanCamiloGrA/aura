@@ -5,6 +5,7 @@ import com.humans.aura.MainDispatcherRule
 import com.humans.aura.core.domain.interfaces.AiTextGenerator
 import com.humans.aura.core.domain.interfaces.ChatRepository
 import com.humans.aura.core.domain.interfaces.ConversationContextRepository
+import com.humans.aura.core.domain.interfaces.GeminiConfigurationRepository
 import com.humans.aura.core.domain.models.AiRequest
 import com.humans.aura.core.domain.models.AiResponse
 import com.humans.aura.core.domain.models.ChatMessage
@@ -46,6 +47,7 @@ class AssistantChatViewModelTest {
             observeChatMessagesUseCase = ObserveChatMessagesUseCase(repository),
             sendChatMessageUseCase = sendUseCase,
             assistantReplySpeaker = speaker,
+            geminiConfigurationRepository = FakeGeminiConfigurationRepository(),
         )
         advanceUntilIdle()
 
@@ -73,6 +75,7 @@ class AssistantChatViewModelTest {
                 aiTextGenerator = FakeAiTextGenerator(),
             ),
             assistantReplySpeaker = FakeAssistantReplySpeaker(),
+            geminiConfigurationRepository = FakeGeminiConfigurationRepository(),
         )
         advanceUntilIdle()
 
@@ -131,5 +134,9 @@ class AssistantChatViewModelTest {
 
     private class FakeAiTextGenerator : AiTextGenerator {
         override suspend fun generate(request: AiRequest): AiResponse = AiResponse("Sure", "gemini-test")
+    }
+
+    private class FakeGeminiConfigurationRepository : GeminiConfigurationRepository {
+        override fun isApiKeyConfigured(): Boolean = true
     }
 }

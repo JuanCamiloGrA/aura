@@ -1,6 +1,7 @@
 package com.humans.aura.features.voice.presentation
 
 import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -16,13 +17,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.abs
@@ -33,14 +39,26 @@ private const val CANCEL_THRESHOLD_X = 96f
 fun VoiceCaptureButton(
     viewModel: VoiceViewModel = koinViewModel(),
     onSendTranscript: (String) -> Unit = {},
+    idleLabel: String = "HOLD TO TALK",
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var permissionGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED,
+        )
+    }
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = viewModel::onPermissionResult,
+        onResult = { granted ->
+            permissionGranted = granted
+            viewModel.onPermissionResult(granted)
+        },
     )
     VoiceCaptureButton(
         uiState = uiState,
+        hasMicrophonePermission = permissionGranted,
+        idleLabel = idleLabel,
         onRequestPermission = { permissionLauncher.launch(Manifest.permission.RECORD_AUDIO) },
         onStartCapture = viewModel::startCapture,
         onCancelCapture = viewModel::cancelCapture,
@@ -51,11 +69,14 @@ fun VoiceCaptureButton(
 @Composable
 fun VoiceCaptureButton(
     uiState: VoiceUiState,
+    hasMicrophonePermission: Boolean = true,
+    idleLabel: String = "HOLD TO TALK",
     onRequestPermission: () -> Unit = {},
     onStartCapture: () -> Unit,
     onCancelCapture: () -> Unit,
     onReleaseCapture: () -> Unit,
 ) {
+    val needsPermission = !hasMicrophonePermission
     val isActive = uiState.stage == VoiceUiStage.Listening ||
         uiState.stage == VoiceUiStage.PartialReady
     val isError = uiState.stage == VoiceUiStage.PermissionDenied ||
@@ -76,7 +97,7 @@ fun VoiceCaptureButton(
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
-                    if (uiState.stage == VoiceUiStage.PermissionDenied) {
+                    if (needsPermission) {
                         onRequestPermission()
                         return@awaitEachGesture
                     }
@@ -118,7 +139,7 @@ fun VoiceCaptureButton(
                     VoiceUiStage.Idle -> if (uiState.transcript.isNotBlank()) {
                         "Ready: ${uiState.transcript}"
                     } else {
-                        "HOLD TO TALK"
+                        idleLabel
                     }
                 },
                 style = if (uiState.stage == VoiceUiStage.Idle && uiState.transcript.isBlank()) {

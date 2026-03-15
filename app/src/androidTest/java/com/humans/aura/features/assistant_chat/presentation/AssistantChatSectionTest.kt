@@ -36,6 +36,7 @@ class AssistantChatSectionTest {
                             ChatMessage(2, 1, ChatRole.ASSISTANT, "You protected focus.", "You protected focus.", "en", 2L, false),
                         ),
                         draftMessage = "Plan tomorrow",
+                        status = AssistantChatStatus(isGeminiConfigured = true),
                     ),
                     onDraftChanged = {},
                     onSendMessage = { sends += 1 },
@@ -47,6 +48,7 @@ class AssistantChatSectionTest {
         composeRule.onNodeWithTag("assistant_chat_send_button").assertIsEnabled().performClick()
         composeRule.onNodeWithText("You").assertIsDisplayed()
         composeRule.onNodeWithText("AURA").assertIsDisplayed()
+        composeRule.onNodeWithText("Gemini connected").assertIsDisplayed()
 
         assertEquals(1, sends)
     }
@@ -61,6 +63,7 @@ class AssistantChatSectionTest {
                         isSending = true,
                         draftMessage = "",
                         lastErrorMessage = "Unable to reach AURA right now",
+                        status = AssistantChatStatus(isGeminiConfigured = false),
                     ),
                     onDraftChanged = {},
                     onSendMessage = {},
@@ -71,6 +74,7 @@ class AssistantChatSectionTest {
 
         composeRule.onNodeWithText("Ask AURA about your day, goals, or what to do next.").assertIsDisplayed()
         composeRule.onNodeWithText("Unable to reach AURA right now").assertIsDisplayed()
+        composeRule.onNodeWithText("Gemini key missing").assertIsDisplayed()
         composeRule.onNodeWithTag("assistant_chat_send_button").assertIsNotEnabled()
         composeRule.onNodeWithText("Voice").assertIsDisplayed()
     }
@@ -86,6 +90,7 @@ class AssistantChatSectionTest {
                         messages = listOf(
                             ChatMessage(1, 1, ChatRole.ASSISTANT, "Take one breath.", "Take one breath.", "en", 1L, false),
                         ),
+                        status = AssistantChatStatus(isGeminiConfigured = true),
                     ),
                     onDraftChanged = {},
                     onSendMessage = {},

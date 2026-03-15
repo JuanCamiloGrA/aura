@@ -18,6 +18,16 @@ class ManifestPermissionsTest {
             packageInfo.requestedPermissions.orEmpty().contains(android.Manifest.permission.INTERNET),
         )
     }
+
+    @Test
+    fun manifest_declares_microphone_permission_for_voice_capture() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val packageInfo = context.packageManager.packageInfoForPermissions(context.packageName)
+
+        assertTrue(
+            packageInfo.requestedPermissions.orEmpty().contains(android.Manifest.permission.RECORD_AUDIO),
+        )
+    }
 }
 
 private fun PackageManager.packageInfoForPermissions(packageName: String): PackageInfo =

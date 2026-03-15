@@ -130,6 +130,7 @@ class VoiceCaptureButtonTest {
             AuraTheme {
                 VoiceCaptureButton(
                     uiState = VoiceUiState(stage = VoiceUiStage.PermissionDenied, errorMessage = "Microphone permission denied"),
+                    hasMicrophonePermission = false,
                     onStartCapture = {},
                     onCancelCapture = {},
                     onReleaseCapture = {},
@@ -150,6 +151,7 @@ class VoiceCaptureButtonTest {
             AuraTheme {
                 VoiceCaptureButton(
                     uiState = VoiceUiState(stage = VoiceUiStage.PermissionDenied),
+                    hasMicrophonePermission = false,
                     onRequestPermission = { permissionRequests += 1 },
                     onStartCapture = { starts += 1 },
                     onCancelCapture = {},
@@ -178,6 +180,7 @@ class VoiceCaptureButtonTest {
                             stage = VoiceUiStage.Idle,
                             transcript = "Plan the next block",
                         ),
+                        hasMicrophonePermission = true,
                         onStartCapture = {},
                         onCancelCapture = {},
                         onReleaseCapture = {},
@@ -187,6 +190,7 @@ class VoiceCaptureButtonTest {
                             stage = VoiceUiStage.Error,
                             errorMessage = "Mic error",
                         ),
+                        hasMicrophonePermission = true,
                         onStartCapture = {},
                         onCancelCapture = {},
                         onReleaseCapture = {},

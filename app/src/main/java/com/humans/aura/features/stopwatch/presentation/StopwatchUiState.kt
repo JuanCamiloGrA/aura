@@ -12,4 +12,5 @@ data class StopwatchUiState(
     val runningDurationLabel: String = "00:00:00",
     val isLoading: Boolean = false,
     val isLogging: Boolean = false,
+    val isVoiceLoggingEnabled: Boolean = true,
 )

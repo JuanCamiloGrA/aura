@@ -10,4 +10,5 @@ data class AssistantChatUiState(
     val isSending: Boolean = false,
     val lastErrorMessage: String? = null,
     val isLoading: Boolean = false,
+    val status: AssistantChatStatus = AssistantChatStatus(),
 )

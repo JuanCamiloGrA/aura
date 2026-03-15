@@ -83,7 +83,7 @@ class VoiceViewModel(
         } else {
             mutableUiState.value = VoiceUiState(
                 stage = VoiceUiStage.PermissionDenied,
-                errorMessage = "Microphone permission denied",
+                errorMessage = "Microphone permission required",
             )
         }
     }
