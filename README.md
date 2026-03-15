@@ -205,7 +205,7 @@ This project is now configured with a dedicated `samsungRelease` production flav
 - Release minification enabled with R8
 - Resource shrinking enabled
 - Non-essential dependency metadata excluded from the packaged artifact
-- Signing config can be supplied from environment variables, Gradle properties, or `local.properties`
+- Signing config can be supplied from environment variables, user Gradle properties, or a dedicated untracked `keystore.properties`
 - Release variant name: `samsungRelease`
 
 ### Prerequisites
@@ -235,16 +235,16 @@ The Gemini key is read from:
 You can provide these values in any of these places:
 
 1. System environment variables
-2. `~/.gradle/gradle.properties`
-3. Project `local.properties`
+2. User Gradle properties at `C:/Users/<you>/.gradle/gradle.properties`
+3. A dedicated untracked `keystore.properties` file in the project root
 
-For local development, `local.properties` is usually the easiest choice and is already ignored by Git.
+Do not use `local.properties` for signing credentials. Android documents `local.properties` as local machine configuration, and Android Studio may regenerate or overwrite it.
 
-### Option A — configure secrets in `local.properties`
+### Recommended option for local development — user Gradle properties
 
-Add entries like these to your local `local.properties` file:
+For a personal Windows machine, the cleanest option is usually your user Gradle properties file:
 
-```AURA/local.properties#L1-5
+```/dev/null/gradle.properties#L1-5
 GEMINI_API_KEY=your_gemini_api_key_here
 AURA_RELEASE_STORE_FILE=C:/Users/your-user/keystores/aura-release.jks
 AURA_RELEASE_STORE_PASSWORD=your_store_password_here
@@ -252,7 +252,30 @@ AURA_RELEASE_KEY_ALIAS=aura
 AURA_RELEASE_KEY_PASSWORD=your_key_password_here
 ```
 
-Use forward slashes in the keystore path on Windows to keep the path clean and portable inside Gradle.
+Recommended location on Windows:
+
+- `C:\Users\<you>\.gradle\gradle.properties`
+
+Why this is recommended:
+
+- outside the repository
+- not overwritten by Android Studio project sync
+- automatically picked up by Gradle
+- convenient for local release builds
+
+### Alternative project-local option — `keystore.properties`
+
+Android’s signing documentation commonly recommends a dedicated `keystore.properties` file for signing values. If you prefer that pattern, create an untracked file in the project root:
+
+```/dev/null/keystore.properties#L1-5
+GEMINI_API_KEY=your_gemini_api_key_here
+AURA_RELEASE_STORE_FILE=C:/Users/your-user/keystores/aura-release.jks
+AURA_RELEASE_STORE_PASSWORD=your_store_password_here
+AURA_RELEASE_KEY_ALIAS=aura
+AURA_RELEASE_KEY_PASSWORD=your_key_password_here
+```
+
+If you use this option, keep the file out of version control.
 
 ### Option B — configure secrets as environment variables on Windows
 
@@ -355,10 +378,11 @@ For a personal non-Play-Store APK, this is acceptable if you only want local/off
 For your current use case, the clean path is:
 
 1. Create one long-lived personal release keystore
-2. Store signing values in `local.properties` or user environment variables
-3. Build `samsungRelease`
-4. Install and test on your Samsung device
-5. Keep the same keystore for every future update so Android accepts upgrades
+2. Store signing values in user `gradle.properties`, or use environment variables if you prefer
+3. Optionally use an untracked `keystore.properties` file if you want a project-local signing config file
+4. Build `samsungRelease`
+5. Install and test on your Samsung device
+6. Keep the same keystore for every future update so Android accepts upgrades
 
 ### Notes for non-Play-Store distribution
 
