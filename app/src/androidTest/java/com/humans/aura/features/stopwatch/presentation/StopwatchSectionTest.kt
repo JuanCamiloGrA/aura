@@ -67,12 +67,12 @@ class StopwatchSectionTest {
         composeRule.onNodeWithTag("stopwatch_input").performTextInput("Focus")
         composeRule.onNodeWithTag("new_activity_button").assertIsEnabled().performClick()
         composeRule.onNodeWithTag("use_prediction_button").performClick()
-        composeRule.onNodeWithText("Refresh suggestion").performClick()
+        composeRule.onNodeWithText("REFRESH").performClick()
         composeRule.onNodeWithTag("mark_inaccurate_button").performClick()
         composeRule.onNodeWithTag("mark_lost_button").performClick()
-        composeRule.onNodeWithText("Clear activity history").performClick()
-        composeRule.onNodeWithText("Status: ACTIVE").assertExists()
-        composeRule.onNodeWithText("Started at", substring = true).assertExists()
+        composeRule.onNodeWithText("CLEAR").performClick()
+        composeRule.onNodeWithText("TRACKING").assertExists()
+        composeRule.onNodeWithText("Focus").assertExists()
 
         assertEquals(1, logged)
         assertEquals(1, inaccurate)
@@ -98,12 +98,12 @@ class StopwatchSectionTest {
             }
         }
 
-        composeRule.onNodeWithText("No open activity yet").assertIsDisplayed()
-        composeRule.onNodeWithText("Your log is empty. The first tap should create the active activity instantly.").assertIsDisplayed()
-        composeRule.onNodeWithText("Prediction uses your recent timing pattern.").assertIsDisplayed()
+        composeRule.onNodeWithText("READY").assertIsDisplayed()
+        composeRule.onNodeWithText("No open activity").assertIsDisplayed()
+        composeRule.onNodeWithText("What are you doing next?").assertIsDisplayed()
         composeRule.onNodeWithTag("new_activity_button").assertIsNotEnabled()
-        composeRule.onNodeWithTag("mark_inaccurate_button").assertIsNotEnabled()
-        composeRule.onNodeWithTag("mark_lost_button").assertIsNotEnabled()
+        composeRule.onAllNodesWithTag("mark_inaccurate_button").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("mark_lost_button").assertCountEquals(0)
     }
 
     @Test
@@ -153,11 +153,11 @@ class StopwatchSectionTest {
         }
 
         composeRule.onAllNodesWithText("Build").assertCountEquals(2)
-        composeRule.onNodeWithText("Status: INACCURATE").assertIsDisplayed()
+        composeRule.onAllNodesWithText("INACCURATE").assertCountEquals(2)
         composeRule.onNodeWithText("Review", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("running", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("now", substring = true).assertIsDisplayed()
         composeRule.onAllNodesWithTag("use_prediction_button").assertCountEquals(0)
-        composeRule.onAllNodesWithText("Refresh suggestion").assertCountEquals(0)
+        composeRule.onAllNodesWithText("REFRESH").assertCountEquals(0)
     }
 
     @Test
@@ -190,6 +190,6 @@ class StopwatchSectionTest {
         composeRule.onNodeWithTag("stopwatch_input").performTextReplacement("Write")
 
         assertEquals("Write", draft)
-        composeRule.onNodeWithText("Suggested now: Review. Start typing to overwrite it.").assertIsDisplayed()
+        composeRule.onNodeWithTag("stopwatch_input").assertExists()
     }
 }

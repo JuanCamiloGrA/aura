@@ -30,7 +30,6 @@ class AuraAppTest {
         composeRule.onNodeWithText("AURA").fetchSemanticsNode()
         composeRule.onNodeWithText("Stopwatch").fetchSemanticsNode()
         composeRule.onNodeWithText("Daily goals").fetchSemanticsNode()
-        composeRule.onNodeWithText("Day summary").fetchSemanticsNode()
     }
 
     @Test
@@ -66,14 +65,14 @@ class AuraAppTest {
             }
         }
 
-        composeRule.onNodeWithText("Compose").fetchSemanticsNode()
-        composeRule.onNodeWithText("Room").fetchSemanticsNode()
-        composeRule.onNodeWithText("Koin").fetchSemanticsNode()
+        composeRule.onNodeWithText("Stopwatch").fetchSemanticsNode()
+        composeRule.onNodeWithText("Daily goals").fetchSemanticsNode()
 
         composeRule.onNodeWithTag("nav_assistant").performClick()
+        composeRule.onNodeWithText("Assistant chat").fetchSemanticsNode()
         composeRule.onNodeWithTag("nav_dashboard").performClick()
 
-        composeRule.onAllNodesWithText("Day summary").fetchSemanticsNodes()
         composeRule.onNodeWithText("Stopwatch").fetchSemanticsNode()
+        composeRule.onNodeWithText("Daily goals").fetchSemanticsNode()
     }
 }

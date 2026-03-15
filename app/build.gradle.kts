@@ -66,15 +66,12 @@ val coverageExclusions = listOf(
     "**/*ButtonKt$*.class",
 )
 
-val kotlinDebugTree = fileTree("$buildDir/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes") {
-    exclude(coverageExclusions)
-}
-
-val javaDebugTree = fileTree("$buildDir/intermediates/javac/debug/compileDebugJavaWithJavac/classes") {
-    exclude(coverageExclusions)
-}
-
-val mainSrc = "$projectDir/src/main/java"
+val coverageVariantName = "SamsungDebug"
+val coverageVariantPath = "samsungDebug"
+val coverageUnitTestPath = "samsungDebugUnitTest"
+val coverageAndroidTestPath = "samsungDebugAndroidTest"
+val coverageUnitTestTask = "test${coverageVariantName}UnitTest"
+val coverageConnectedAndroidTestTask = "connected${coverageVariantName}AndroidTest"
 
 android {
     val releaseStoreFile = propertyOrEnv("AURA_RELEASE_STORE_FILE")
@@ -254,7 +251,7 @@ dependencies {
 }
 
 tasks.register<JacocoReport>("jacocoFullReport") {
-    dependsOn("testDebugUnitTest", "connectedDebugAndroidTest")
+    dependsOn(coverageUnitTestTask, coverageConnectedAndroidTestTask)
 
     reports {
         xml.required.set(true)
@@ -262,18 +259,33 @@ tasks.register<JacocoReport>("jacocoFullReport") {
         csv.required.set(false)
     }
 
-    doFirst {
-        println("JaCoCo class directories: ${files(kotlinDebugTree, javaDebugTree).files}")
-    }
-
-    classDirectories.setFrom(files(kotlinDebugTree, javaDebugTree))
-    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(
+        project.fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/$coverageVariantPath/compile${coverageVariantName}Kotlin/classes")) {
+            exclude(coverageExclusions)
+        },
+        project.fileTree(layout.buildDirectory.dir("intermediates/javac/$coverageVariantPath/compile${coverageVariantName}JavaWithJavac/classes")) {
+            exclude(coverageExclusions)
+        },
+    )
+    sourceDirectories.setFrom(layout.projectDirectory.dir("src/main/java"))
     executionData.setFrom(
-        fileTree(buildDir) {
+        project.fileTree(layout.buildDirectory) {
             include(
-                "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
-                "outputs/code_coverage/debugAndroidTest/connected/**/*.ec",
+                "outputs/unit_test_code_coverage/$coverageUnitTestPath/test${coverageVariantName}UnitTest.exec",
+                "outputs/code_coverage/$coverageAndroidTestPath/connected/**/*.ec",
             )
         },
     )
+}
+
+if (tasks.findByName("testDebugUnitTest") == null) {
+    tasks.register("testDebugUnitTest") {
+        dependsOn(coverageUnitTestTask)
+    }
+}
+
+if (tasks.findByName("connectedDebugAndroidTest") == null) {
+    tasks.register("connectedDebugAndroidTest") {
+        dependsOn(coverageConnectedAndroidTestTask)
+    }
 }
