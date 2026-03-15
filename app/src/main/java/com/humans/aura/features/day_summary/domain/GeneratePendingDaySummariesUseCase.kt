@@ -1,13 +1,13 @@
 package com.humans.aura.features.day_summary.domain
 
 import com.humans.aura.core.domain.interfaces.AiTextGenerator
+import com.humans.aura.core.domain.interfaces.DaySummaryContextEncoder
+import com.humans.aura.core.domain.interfaces.DaySummaryReflectionCodec
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.AiGenerationException
 import com.humans.aura.core.domain.models.AiRequest
 import com.humans.aura.core.domain.models.AiTask
-import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
-import com.humans.aura.features.day_summary.data.DaySummaryReflectionParser
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
 
@@ -15,8 +15,8 @@ class GeneratePendingDaySummariesUseCase(
     private val daySummaryRepository: DaySummaryRepository,
     private val assembleDaySummaryContextUseCase: AssembleDaySummaryContextUseCase,
     private val buildDaySummaryPromptUseCase: BuildDaySummaryPromptUseCase,
-    private val daySummaryContextJsonEncoder: DaySummaryContextJsonEncoder,
-    private val reflectionParser: DaySummaryReflectionParser,
+    private val daySummaryContextEncoder: DaySummaryContextEncoder,
+    private val daySummaryReflectionCodec: DaySummaryReflectionCodec,
     private val aiTextGenerator: AiTextGenerator,
     private val timeProvider: TimeProvider,
 ) {
@@ -31,7 +31,7 @@ class GeneratePendingDaySummariesUseCase(
         summaries.forEach { summary ->
             val context = assembleDaySummaryContextUseCase(summary.dayStartEpochMillis)
             val prompt = buildDaySummaryPromptUseCase(context)
-            val rawContextJson = daySummaryContextJsonEncoder.encode(context)
+            val rawContextJson = daySummaryContextEncoder.encode(context)
             val now = timeProvider.currentTimeMillis()
 
             daySummaryRepository.updatePendingContext(
@@ -50,12 +50,12 @@ class GeneratePendingDaySummariesUseCase(
                         prompt = prompt,
                     ),
                 )
-                val reflection = reflectionParser.parse(response.text)
+                val reflection = daySummaryReflectionCodec.parse(response.text)
                     ?: throw AiGenerationException.NonRetryable(
-                        "Gemini response did not match the required summary JSON schema",
+                        "AI response did not match the required summary JSON schema",
                     )
                 CompletedSummaryResult(
-                    summaryText = reflectionParser.encode(reflection),
+                    summaryText = daySummaryReflectionCodec.encode(reflection),
                     modelName = response.modelName,
                 )
             }.onSuccess { completedSummary ->

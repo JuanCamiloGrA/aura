@@ -8,7 +8,7 @@ import com.humans.aura.core.domain.models.AppIntent
 import com.humans.aura.core.services.database.ActivityPredictionEntity
 import com.humans.aura.core.services.database.dao.ActivityDao
 import com.humans.aura.core.services.database.entity.ActivityEntity
-import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -44,11 +44,13 @@ import com.humans.aura.features.day_summary.domain.CreatePendingDaySummaryUseCas
 import com.humans.aura.features.day_summary.domain.GeneratePendingDaySummariesUseCase
 import com.humans.aura.features.day_summary.domain.ObserveLatestSummaryUseCase
 import com.humans.aura.features.day_summary.domain.ObserveRecentSummariesUseCase
+import com.humans.aura.core.domain.interfaces.DaySummaryContextEncoder
 import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
+import com.humans.aura.core.domain.interfaces.DaySummaryReflectionCodec
 import com.humans.aura.features.day_summary.data.DaySummaryReflectionParser
-import com.humans.aura.features.stopwatch.domain.ActivityPrediction
+import com.humans.aura.core.domain.models.ActivityPrediction
 import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
-import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveRecentActivitiesUseCase
@@ -105,8 +107,8 @@ class UseCaseModuleTest {
                             explicitNulls = false
                         }
                     }
-                    single { DaySummaryContextJsonEncoder(get()) }
-                    single { DaySummaryReflectionParser(get()) }
+                    single<DaySummaryContextEncoder> { DaySummaryContextJsonEncoder(get()) }
+                    single<DaySummaryReflectionCodec> { DaySummaryReflectionParser(get()) }
                 },
                 useCaseModule,
             )

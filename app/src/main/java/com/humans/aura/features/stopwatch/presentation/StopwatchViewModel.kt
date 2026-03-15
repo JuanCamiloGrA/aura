@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.humans.aura.core.domain.interfaces.CurrentTimeTicker
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.ActivityStatus
+import com.humans.aura.core.domain.models.ActivityPrediction
 import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
@@ -31,7 +32,7 @@ class StopwatchViewModel(
 ) : ViewModel() {
 
     private val draftTitle = MutableStateFlow("")
-    private val prediction = MutableStateFlow<com.humans.aura.features.stopwatch.domain.ActivityPrediction?>(null)
+    private val prediction = MutableStateFlow<ActivityPrediction?>(null)
     private val isPredictionAutofilled = MutableStateFlow(false)
     private val isLogging = MutableStateFlow(false)
     private val nowEpochMillis = currentTimeTicker.tickEvery(RUNNING_DURATION_TICK_MILLIS).stateIn(
@@ -142,7 +143,7 @@ class StopwatchViewModel(
     }
 
     private fun applyPrediction(
-        nextPrediction: com.humans.aura.features.stopwatch.domain.ActivityPrediction?,
+        nextPrediction: ActivityPrediction?,
         forceAutofill: Boolean = false,
     ) {
         prediction.value = nextPrediction
@@ -172,7 +173,7 @@ class StopwatchViewModel(
 
     private data class DraftState(
         val draftTitle: String,
-        val prediction: com.humans.aura.features.stopwatch.domain.ActivityPrediction?,
+        val prediction: ActivityPrediction?,
         val isPredictionAutofilled: Boolean,
         val isLogging: Boolean,
     )

@@ -8,7 +8,9 @@ import com.humans.aura.core.domain.interfaces.DailyGoalRepository
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
 import com.humans.aura.core.domain.models.AppPreferencesSnapshot
 import com.humans.aura.features.configuration.data.BackupTransactionRunner
+import com.humans.aura.core.domain.interfaces.DaySummaryContextEncoder
 import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
+import com.humans.aura.core.domain.interfaces.DaySummaryReflectionCodec
 import com.humans.aura.features.day_summary.data.DaySummaryReflectionParser
 import com.humans.aura.core.domain.interfaces.ConversationContextRepository
 import com.humans.aura.core.domain.interfaces.IntentMediator
@@ -69,8 +71,8 @@ class RepositoryModuleTest {
                 get<ConversationContextRepository>()
                 get<ChatRepository>()
                 get<BackupRepository>()
-                get<DaySummaryReflectionParser>()
-                get<DaySummaryContextJsonEncoder>()
+                get<DaySummaryReflectionCodec>()
+                get<DaySummaryContextEncoder>()
             }
         } finally {
             app.close()

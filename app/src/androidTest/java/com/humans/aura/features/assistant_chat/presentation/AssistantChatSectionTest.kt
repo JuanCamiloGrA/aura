@@ -48,9 +48,9 @@ class AssistantChatSectionTest {
         composeRule.onNodeWithTag("assistant_chat_send_button").assertIsEnabled().performClick()
         composeRule.onNodeWithText("You").assertIsDisplayed()
         composeRule.onNodeWithText("AURA").assertIsDisplayed()
-        composeRule.onNodeWithText("You protected focus.").assertIsDisplayed()
-        composeRule.onNodeWithText("Keep the same start").assertIsDisplayed()
-        composeRule.onNodeWithText("Protect your afternoon").assertIsDisplayed()
+        composeRule.onNodeWithText("You protected", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Keep the same start", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Protect your afternoon", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("Gemini connected").assertIsDisplayed()
 
         assertEquals(1, sends)

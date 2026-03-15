@@ -24,7 +24,9 @@ import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.services.ai.GeminiApiKeyProvider
 import com.humans.aura.core.services.ai.GeminiModelSelector
 import com.humans.aura.core.services.sync.AuraWorkerFactory
+import com.humans.aura.core.domain.interfaces.DaySummaryContextEncoder
 import com.humans.aura.features.day_summary.data.DaySummaryContextJsonEncoder
+import com.humans.aura.core.domain.interfaces.DaySummaryReflectionCodec
 import com.humans.aura.features.day_summary.data.DaySummaryReflectionParser
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
@@ -34,7 +36,7 @@ import com.humans.aura.core.domain.models.ChatSession
 import com.humans.aura.core.domain.models.DaySummary
 import com.humans.aura.core.domain.models.DaySummaryContext
 import com.humans.aura.core.domain.models.DailyGoal
-import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.Json
@@ -57,8 +59,8 @@ class CoreModuleTest {
                     single<DaySummaryRepository> { FakeDaySummaryRepository() }
                     single<ConversationContextRepository> { FakeConversationContextRepository() }
                     single<ChatRepository> { FakeChatRepository() }
-                    single { DaySummaryContextJsonEncoder(get()) }
-                    single { DaySummaryReflectionParser(get()) }
+                    single<DaySummaryContextEncoder> { DaySummaryContextJsonEncoder(get()) }
+                    single<DaySummaryReflectionCodec> { DaySummaryReflectionParser(get()) }
                 },
                 coreModule,
                 useCaseModule,
@@ -100,7 +102,7 @@ class CoreModuleTest {
         override fun observeRecentActivities(limit: Int): Flow<List<Activity>> = MutableStateFlow(emptyList())
         override fun observeActivitiesForDay(dayStartEpochMillis: Long): Flow<List<Activity>> = MutableStateFlow(emptyList())
         override suspend fun logNewActivity(command: LogNewActivityCommand): Activity = error("unused")
-        override suspend fun predictNextTitle(nowEpochMillis: Long): com.humans.aura.features.stopwatch.domain.ActivityPrediction? = null
+        override suspend fun predictNextTitle(nowEpochMillis: Long): com.humans.aura.core.domain.models.ActivityPrediction? = null
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
     }
 

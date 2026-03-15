@@ -4,12 +4,12 @@ import com.humans.aura.core.domain.interfaces.ActivityRepository
 import com.humans.aura.core.domain.interfaces.IntentMediator
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.Activity
+import com.humans.aura.core.domain.models.ActivityPrediction
 import com.humans.aura.core.domain.models.ActivityStatus
 import com.humans.aura.core.domain.models.AppIntent
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 import com.humans.aura.core.services.database.dao.ActivityDao
 import com.humans.aura.core.services.database.entity.ActivityEntity
-import com.humans.aura.features.stopwatch.domain.ActivityPrediction
-import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

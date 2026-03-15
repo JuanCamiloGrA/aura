@@ -4,6 +4,7 @@ import com.humans.aura.core.domain.interfaces.ActivityRepository
 import com.humans.aura.core.domain.interfaces.AppLaunchRepository
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.Activity
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 
 class EnsureInitialActivityUseCase(
     private val activityRepository: ActivityRepository,

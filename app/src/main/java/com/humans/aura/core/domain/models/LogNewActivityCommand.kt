@@ -1,4 +1,4 @@
-package com.humans.aura.features.stopwatch.domain
+package com.humans.aura.core.domain.models
 
 data class LogNewActivityCommand(
     val title: String,

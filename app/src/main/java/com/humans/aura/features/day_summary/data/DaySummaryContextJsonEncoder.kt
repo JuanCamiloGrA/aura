@@ -1,5 +1,6 @@
 package com.humans.aura.features.day_summary.data
 
+import com.humans.aura.core.domain.interfaces.DaySummaryContextEncoder
 import com.humans.aura.core.domain.models.DaySummaryContext
 import com.humans.aura.core.domain.models.contextSnippet
 import kotlinx.serialization.Serializable
@@ -8,7 +9,8 @@ import kotlinx.serialization.json.Json
 
 class DaySummaryContextJsonEncoder(
     private val json: Json,
-) {
+) : DaySummaryContextEncoder {
+    override
     fun encode(context: DaySummaryContext): String =
         json.encodeToString(DaySummaryContextPayload.from(context))
 }

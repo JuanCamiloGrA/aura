@@ -1,5 +1,6 @@
 package com.humans.aura.features.day_summary.data
 
+import com.humans.aura.core.domain.interfaces.DaySummaryReflectionCodec
 import com.humans.aura.core.domain.models.DaySummary
 import com.humans.aura.core.domain.models.SummaryGenerationStatus
 import com.humans.aura.core.services.database.entity.summary.DailySummaryEntity
@@ -20,5 +21,5 @@ fun DailySummaryEntity.toDomain(): DaySummary = DaySummary(
     isSyncedToD1 = isSyncedToD1,
 )
 
-fun DailySummaryEntity.toDomain(reflectionParser: DaySummaryReflectionParser): DaySummary =
-    toDomain().copy(reflection = reflectionParser.parse(summaryText))
+fun DailySummaryEntity.toDomain(reflectionCodec: DaySummaryReflectionCodec): DaySummary =
+    toDomain().copy(reflection = reflectionCodec.parse(summaryText))

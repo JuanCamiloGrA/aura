@@ -18,7 +18,7 @@ import androidx.compose.runtime.remember
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
 import com.humans.aura.core.presentation.theme.AuraTheme
-import com.humans.aura.features.stopwatch.domain.ActivityPrediction
+import com.humans.aura.core.domain.models.ActivityPrediction
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

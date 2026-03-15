@@ -2,7 +2,9 @@ package com.humans.aura.features.day_summary.domain
 
 import com.humans.aura.core.domain.interfaces.AiTextGenerator
 import com.humans.aura.core.domain.interfaces.ConversationContextRepository
+import com.humans.aura.core.domain.interfaces.DaySummaryContextEncoder
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
+import com.humans.aura.core.domain.interfaces.DaySummaryReflectionCodec
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
@@ -93,8 +95,8 @@ class GeneratePendingDaySummariesUseCaseTest {
                 timeProvider = FakeTimeProvider(),
             ),
             buildDaySummaryPromptUseCase = BuildDaySummaryPromptUseCase(Json),
-            daySummaryContextJsonEncoder = DaySummaryContextJsonEncoder(Json),
-            reflectionParser = com.humans.aura.features.day_summary.data.DaySummaryReflectionParser(Json),
+            daySummaryContextEncoder = DaySummaryContextJsonEncoder(Json),
+            daySummaryReflectionCodec = com.humans.aura.features.day_summary.data.DaySummaryReflectionParser(Json),
             aiTextGenerator = FakeAiTextGenerator {
                 AiResponse(
                     """{"wins":["ok"],"friction_points":[],"tomorrow_pivot":"Continue."}""",
@@ -120,8 +122,8 @@ class GeneratePendingDaySummariesUseCaseTest {
             timeProvider = FakeTimeProvider(),
         ),
         buildDaySummaryPromptUseCase = BuildDaySummaryPromptUseCase(Json),
-        daySummaryContextJsonEncoder = DaySummaryContextJsonEncoder(Json),
-        reflectionParser = com.humans.aura.features.day_summary.data.DaySummaryReflectionParser(Json),
+        daySummaryContextEncoder = DaySummaryContextJsonEncoder(Json),
+        daySummaryReflectionCodec = com.humans.aura.features.day_summary.data.DaySummaryReflectionParser(Json),
         aiTextGenerator = aiTextGenerator,
         timeProvider = FakeTimeProvider(),
     )
@@ -138,7 +140,7 @@ class GeneratePendingDaySummariesUseCaseTest {
 
         assertEquals(DaySummarySyncResult.FAILURE, result)
         assertEquals(
-            "Gemini response did not match the required summary JSON schema",
+            "AI response did not match the required summary JSON schema",
             repository.terminalFailures.single().errorMessage,
         )
     }

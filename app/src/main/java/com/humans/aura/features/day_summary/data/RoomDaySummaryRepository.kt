@@ -1,5 +1,6 @@
 package com.humans.aura.features.day_summary.data
 
+import com.humans.aura.core.domain.interfaces.DaySummaryReflectionCodec
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.DaySummary
@@ -12,19 +13,19 @@ import kotlinx.coroutines.flow.map
 class RoomDaySummaryRepository(
     private val daySummaryDao: DaySummaryDao,
     private val timeProvider: TimeProvider,
-    private val reflectionParser: DaySummaryReflectionParser,
+    private val reflectionCodec: DaySummaryReflectionCodec,
 ) : DaySummaryRepository {
 
     override fun observeLatestSummary(): Flow<DaySummary?> =
-        daySummaryDao.observeLatestSummary().map { entity -> entity?.toDomain(reflectionParser) }
+        daySummaryDao.observeLatestSummary().map { entity -> entity?.toDomain(reflectionCodec) }
 
     override fun observeRecentSummaries(limit: Int): Flow<List<DaySummary>> =
-        daySummaryDao.observeRecentSummaries(limit).map { entities -> entities.map { it.toDomain(reflectionParser) } }
+        daySummaryDao.observeRecentSummaries(limit).map { entities -> entities.map { it.toDomain(reflectionCodec) } }
 
     override suspend fun createPendingSummary(dayStartEpochMillis: Long): DaySummary {
         val existing = daySummaryDao.getByDayStart(dayStartEpochMillis)
         if (existing != null) {
-            return existing.toDomain(reflectionParser)
+            return existing.toDomain(reflectionCodec)
         }
 
         val now = timeProvider.currentTimeMillis()
@@ -43,11 +44,11 @@ class RoomDaySummaryRepository(
                 isSyncedToD1 = false,
             ),
         )
-        return requireNotNull(daySummaryDao.getById(id)).toDomain(reflectionParser)
+        return requireNotNull(daySummaryDao.getById(id)).toDomain(reflectionCodec)
     }
 
     override suspend fun getPendingSummaries(limit: Int): List<DaySummary> =
-        daySummaryDao.getSummariesByStatus(SummaryGenerationStatus.PENDING.name, limit).map { it.toDomain(reflectionParser) }
+        daySummaryDao.getSummariesByStatus(SummaryGenerationStatus.PENDING.name, limit).map { it.toDomain(reflectionCodec) }
 
     override suspend fun updatePendingContext(
         summaryId: Long,

@@ -16,8 +16,8 @@ import com.humans.aura.features.daily_goals.domain.ObserveTodayActivitiesUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.SaveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ToggleGoalSubtaskUseCase
-import com.humans.aura.features.stopwatch.domain.ActivityPrediction
-import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
+import com.humans.aura.core.domain.models.ActivityPrediction
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi

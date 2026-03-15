@@ -3,6 +3,7 @@ package com.humans.aura.features.stopwatch.domain
 import com.humans.aura.core.domain.interfaces.ActivityRepository
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.Activity
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 
 class LogNewActivityUseCase(
     private val activityRepository: ActivityRepository,

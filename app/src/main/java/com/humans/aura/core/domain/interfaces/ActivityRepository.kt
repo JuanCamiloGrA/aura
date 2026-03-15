@@ -1,9 +1,9 @@
 package com.humans.aura.core.domain.interfaces
 
 import com.humans.aura.core.domain.models.Activity
+import com.humans.aura.core.domain.models.ActivityPrediction
 import com.humans.aura.core.domain.models.ActivityStatus
-import com.humans.aura.features.stopwatch.domain.ActivityPrediction
-import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 import kotlinx.coroutines.flow.Flow
 
 interface ActivityRepository {

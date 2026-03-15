@@ -5,6 +5,8 @@ import com.humans.aura.core.domain.interfaces.BackupRepository
 import com.humans.aura.core.domain.interfaces.ChatRepository
 import com.humans.aura.core.domain.interfaces.ConversationContextRepository
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
+import com.humans.aura.core.domain.interfaces.DaySummaryContextEncoder
+import com.humans.aura.core.domain.interfaces.DaySummaryReflectionCodec
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
 import com.humans.aura.features.configuration.data.AuraBackupArchiveCodec
 import com.humans.aura.features.configuration.data.ZipBackupRepository
@@ -20,9 +22,9 @@ import org.koin.dsl.module
 val repositoryModule = module {
     single<ActivityRepository> { RoomActivityRepository(get(), get(), get()) }
     single<DailyGoalRepository> { RoomDailyGoalRepository(get(), get()) }
-    single { DaySummaryReflectionParser(get()) }
+    single<DaySummaryReflectionCodec> { DaySummaryReflectionParser(get()) }
     single<DaySummaryRepository> { RoomDaySummaryRepository(get(), get(), get()) }
-    single { DaySummaryContextJsonEncoder(get()) }
+    single<DaySummaryContextEncoder> { DaySummaryContextJsonEncoder(get()) }
     single<ConversationContextRepository> { RoomConversationContextRepository(get(), get(), get(), get()) }
     single<ChatRepository> { RoomChatRepository(get(), get()) }
     single { AuraBackupArchiveCodec(get()) }

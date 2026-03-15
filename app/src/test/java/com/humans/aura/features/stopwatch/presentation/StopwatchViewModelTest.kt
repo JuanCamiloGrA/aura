@@ -7,9 +7,9 @@ import com.humans.aura.core.domain.interfaces.CurrentTimeTicker
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
-import com.humans.aura.features.stopwatch.domain.ActivityPrediction
+import com.humans.aura.core.domain.models.ActivityPrediction
 import com.humans.aura.features.stopwatch.domain.EnsureInitialActivityUseCase
-import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveRecentActivitiesUseCase

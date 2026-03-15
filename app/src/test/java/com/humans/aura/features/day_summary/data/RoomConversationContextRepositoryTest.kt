@@ -10,8 +10,8 @@ import com.humans.aura.core.domain.models.DaySummary
 import com.humans.aura.core.domain.models.DailyGoal
 import com.humans.aura.core.domain.models.GoalSubtask
 import com.humans.aura.core.domain.models.SummaryGenerationStatus
-import com.humans.aura.features.stopwatch.domain.ActivityPrediction
-import com.humans.aura.features.stopwatch.domain.LogNewActivityCommand
+import com.humans.aura.core.domain.models.ActivityPrediction
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf

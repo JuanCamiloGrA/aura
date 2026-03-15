@@ -1,5 +1,6 @@
 package com.humans.aura.features.day_summary.data
 
+import com.humans.aura.core.domain.interfaces.DaySummaryReflectionCodec
 import com.humans.aura.core.domain.models.DaySummaryReflection
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -15,7 +16,8 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class DaySummaryReflectionParser(
     private val json: Json,
-) {
+) : DaySummaryReflectionCodec {
+    override
     fun parse(summaryText: String?): DaySummaryReflection? {
         if (summaryText.isNullOrBlank()) {
             return null
@@ -30,6 +32,7 @@ class DaySummaryReflectionParser(
         }
     }
 
+    override
     fun encode(reflection: DaySummaryReflection): String =
         json.encodeToString(DaySummaryReflectionPayload.from(reflection))
 

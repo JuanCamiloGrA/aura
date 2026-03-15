@@ -1,5 +1,7 @@
 package com.humans.aura.features.stopwatch.domain
 
+import com.humans.aura.core.domain.models.ActivityPrediction
+import com.humans.aura.core.domain.models.LogNewActivityCommand
 import com.humans.aura.core.domain.interfaces.ActivityRepository
 import com.humans.aura.core.domain.interfaces.AppLaunchRepository
 import com.humans.aura.core.domain.interfaces.TimeProvider

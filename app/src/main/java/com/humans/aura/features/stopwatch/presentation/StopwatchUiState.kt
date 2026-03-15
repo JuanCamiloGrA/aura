@@ -1,7 +1,7 @@
 package com.humans.aura.features.stopwatch.presentation
 
 import com.humans.aura.core.domain.models.Activity
-import com.humans.aura.features.stopwatch.domain.ActivityPrediction
+import com.humans.aura.core.domain.models.ActivityPrediction
 
 data class StopwatchUiState(
     val currentActivity: Activity? = null,
