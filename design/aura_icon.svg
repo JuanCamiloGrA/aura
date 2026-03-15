@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+    <defs>
+        <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+            <stop offset="35%" stop-color="#ffffff" stop-opacity="0.15" />
+            <stop offset="50%" stop-color="#ffffff" stop-opacity="0.05" />
+            <stop offset="70%" stop-color="#000000" stop-opacity="0" />
+        </radialGradient>
+        <filter id="blurGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="15" result="blur" />
+        </filter>
+        <filter id="wideGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="35" result="blur" />
+        </filter>
+    </defs>
+    
+    <!-- Background (Apple squircle shape, deep OLED black) -->
+    <rect width="1024" height="1024" fill="#030303" rx="225" />
+    
+    <!-- Background radiant gradient -->
+    <circle cx="512" cy="512" r="512" fill="url(#glow)" />
+    
+    <!-- The Total Eclipse Center Black Hole -->
+    <circle cx="512" cy="512" r="280" fill="#000000" />
+    
+    <!-- Wide Subtle Glow -->
+    <circle cx="512" cy="512" r="280" stroke="#ffffff" stroke-width="40" fill="none" opacity="0.15" filter="url(#wideGlow)" />
+    
+    <!-- Inner Intense Glow -->
+    <circle cx="512" cy="512" r="280" stroke="#ffffff" stroke-width="12" fill="none" opacity="0.6" filter="url(#blurGlow)" />
+    
+    <!-- The Razor Sharp White Eclipse Ring -->
+    <circle cx="512" cy="512" r="280" stroke="#ffffff" stroke-width="8" fill="none" />
+</svg>
