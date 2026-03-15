@@ -26,3 +26,4 @@ local.properties
 keystore.properties
 signing.properties
 release.properties
+/app/samsung/
