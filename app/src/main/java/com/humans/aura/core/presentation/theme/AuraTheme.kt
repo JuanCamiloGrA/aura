@@ -4,9 +4,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import com.humans.aura.core.domain.models.AppThemeModePreference
 
 // ── Light (default) ─────────────────────────────────────────────────────────
 private val LightColors = lightColorScheme(
@@ -41,28 +43,28 @@ private val LightColors = lightColorScheme(
 )
 
 // ── Dark (night / sleep mode) ───────────────────────────────────────────────
-private val DarkColors = darkColorScheme(
+private val OledDarkColors = darkColorScheme(
     primary = AuraWhite,
     onPrimary = AuraBlack,
-    primaryContainer = AuraInk,
+    primaryContainer = AuraDarkestSurface,
     onPrimaryContainer = AuraWhite,
-    secondary = AuraLight,
+    secondary = AuraMist,
     onSecondary = AuraBlack,
-    secondaryContainer = AuraInk,
+    secondaryContainer = AuraDarkestSurface,
     onSecondaryContainer = AuraMist,
     background = AuraBlack,
     onBackground = AuraWhite,
     surface = AuraBlack,
     onSurface = AuraWhite,
-    surfaceVariant = AuraInk,
-    onSurfaceVariant = AuraMedium,
+    surfaceVariant = AuraDarkestSurface,
+    onSurfaceVariant = AuraLight,
     surfaceContainerLowest = AuraBlack,
-    surfaceContainerLow = AuraInk,
-    surfaceContainer = AuraInk,
-    surfaceContainerHigh = AuraDark,
+    surfaceContainerLow = AuraDarkestSurface,
+    surfaceContainer = AuraDarkestSurface,
+    surfaceContainerHigh = AuraInk,
     surfaceContainerHighest = AuraDark,
     outline = AuraDark,
-    outlineVariant = AuraInk,
+    outlineVariant = AuraDarkestSurface,
     error = AuraError,
     onError = AuraWhite,
     errorContainer = AuraError,
@@ -84,16 +86,22 @@ private val AuraShapes = Shapes(
 /**
  * Aura design system entry point.
  *
- * @param darkTheme Pass `true` for night / sleep-mode dark theme.
- *                  Defaults to `false` (light mode).
+ * @param themeModePreference Controls whether the app follows the device,
+ * uses light mode, or forces OLED dark mode.
  */
 @Composable
 fun AuraTheme(
-    darkTheme: Boolean = false,
+    themeModePreference: AppThemeModePreference = AppThemeModePreference.DEVICE,
     content: @Composable () -> Unit,
 ) {
+    val darkTheme = when (themeModePreference) {
+        AppThemeModePreference.DEVICE -> isSystemInDarkTheme()
+        AppThemeModePreference.LIGHT -> false
+        AppThemeModePreference.DARK -> true
+    }
+
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = if (darkTheme) OledDarkColors else LightColors,
         typography = AuraTypography,
         shapes = AuraShapes,
         content = content,

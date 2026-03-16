@@ -6,6 +6,7 @@ import com.humans.aura.core.domain.interfaces.BackupRepository
 import com.humans.aura.core.domain.interfaces.ChatRepository
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
+import com.humans.aura.core.domain.models.AppThemeModePreference
 import com.humans.aura.core.domain.models.AppPreferencesSnapshot
 import com.humans.aura.features.configuration.data.BackupTransactionRunner
 import com.humans.aura.core.domain.interfaces.DaySummaryContextEncoder
@@ -154,7 +155,10 @@ class RepositoryModuleTest {
     }
 
     private class FakeAppPreferencesRepository : AppPreferencesRepository {
-        override suspend fun snapshot(): AppPreferencesSnapshot = AppPreferencesSnapshot(false)
+        override suspend fun snapshot(): AppPreferencesSnapshot = AppPreferencesSnapshot(
+            hasCompletedInitialStopwatchBootstrap = false,
+            themeModePreference = AppThemeModePreference.DEVICE,
+        )
 
         override suspend fun restore(snapshot: AppPreferencesSnapshot) = Unit
     }

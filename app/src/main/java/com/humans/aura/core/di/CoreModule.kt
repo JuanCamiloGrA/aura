@@ -12,6 +12,7 @@ import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
 import com.humans.aura.core.domain.interfaces.IntentMediator
 import com.humans.aura.core.domain.interfaces.SyncScheduler
 import com.humans.aura.core.domain.interfaces.TextToSpeechEngine
+import com.humans.aura.core.domain.interfaces.ThemePreferenceRepository
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.coordination.AppIntentCoordinator
@@ -44,6 +45,7 @@ val coreModule = module {
     single { SharedPreferencesAppLaunchRepository(androidApplication()) }
     single<AppLaunchRepository> { get<SharedPreferencesAppLaunchRepository>() }
     single<AppPreferencesRepository> { get<SharedPreferencesAppLaunchRepository>() }
+    single<ThemePreferenceRepository> { get<SharedPreferencesAppLaunchRepository>() }
     single<BackupDocumentRepository> { AndroidBackupDocumentRepository(androidApplication()) }
     single {
         Json {

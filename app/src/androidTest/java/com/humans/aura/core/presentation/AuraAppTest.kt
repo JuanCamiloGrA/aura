@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.humans.aura.core.domain.models.AppThemeModePreference
 import com.humans.aura.core.presentation.theme.AuraTheme
 import org.junit.Rule
 import org.junit.Test
@@ -16,7 +17,7 @@ class AuraAppTest {
     @Test
     fun app_renders_main_sections() {
         composeRule.setContent {
-            AuraTheme {
+            AuraTheme(themeModePreference = AppThemeModePreference.LIGHT) {
                 AuraApp(
                     stopwatchSection = { androidx.compose.material3.Text("Stopwatch") },
                     dailyGoalsSection = { androidx.compose.material3.Text("Daily goals") },
@@ -35,7 +36,7 @@ class AuraAppTest {
     @Test
     fun app_navigation_switches_between_dashboard_chat_and_summary() {
         composeRule.setContent {
-            AuraTheme {
+            AuraTheme(themeModePreference = AppThemeModePreference.LIGHT) {
                 AuraApp(
                     stopwatchSection = { androidx.compose.material3.Text("Stopwatch") },
                     dailyGoalsSection = { androidx.compose.material3.Text("Daily goals") },
@@ -56,7 +57,7 @@ class AuraAppTest {
     @Test
     fun app_renders_foundation_pills_and_can_return_to_dashboard() {
         composeRule.setContent {
-            AuraTheme {
+            AuraTheme(themeModePreference = AppThemeModePreference.LIGHT) {
                 AuraApp(
                     stopwatchSection = { androidx.compose.material3.Text("Stopwatch") },
                     dailyGoalsSection = { androidx.compose.material3.Text("Daily goals") },
@@ -81,7 +82,7 @@ class AuraAppTest {
     @Test
     fun configuration_button_opens_and_closes_configuration_page() {
         composeRule.setContent {
-            AuraTheme {
+            AuraTheme(themeModePreference = AppThemeModePreference.LIGHT) {
                 AuraApp(
                     stopwatchSection = { androidx.compose.material3.Text("Stopwatch") },
                     dailyGoalsSection = { androidx.compose.material3.Text("Daily goals") },

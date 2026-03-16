@@ -7,8 +7,10 @@ import com.humans.aura.features.daily_goals.domain.SaveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ToggleGoalSubtaskUseCase
 import com.humans.aura.features.daily_goals.domain.UpdateTodayGoalTitleUseCase
 import com.humans.aura.features.configuration.domain.CreateBackupFileNameUseCase
+import com.humans.aura.features.configuration.domain.ObserveThemeModePreferenceUseCase
 import com.humans.aura.features.configuration.domain.ExportBackupToDocumentUseCase
 import com.humans.aura.features.configuration.domain.RestoreBackupFromDocumentUseCase
+import com.humans.aura.features.configuration.domain.SetThemeModePreferenceUseCase
 import com.humans.aura.features.day_summary.domain.AssembleDaySummaryContextUseCase
 import com.humans.aura.features.day_summary.domain.BuildDaySummaryPromptUseCase
 import com.humans.aura.features.day_summary.domain.CreatePendingDaySummaryUseCase
@@ -50,6 +52,8 @@ val useCaseModule = module {
     factory { CreateBackupFileNameUseCase(get()) }
     factory { ExportBackupToDocumentUseCase(get(), get(), get()) }
     factory { RestoreBackupFromDocumentUseCase(get(), get()) }
+    factory { ObserveThemeModePreferenceUseCase(get()) }
+    factory { SetThemeModePreferenceUseCase(get()) }
     factory { HandleSleepIntentUseCase(get(), get(), get(), get()) }
     factory { CreatePendingDaySummaryUseCase(get(), get()) }
     factory { AssembleDaySummaryContextUseCase(get(), get()) }

@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.humans.aura.core.presentation.AuraApp
-import com.humans.aura.core.presentation.theme.AuraTheme
+import com.humans.aura.features.configuration.presentation.ConfigurationThemeHost
 
 class MainActivity : ComponentActivity() {
 
@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            AuraTheme {
+            ConfigurationThemeHost {
                 AuraApp()
             }
         }

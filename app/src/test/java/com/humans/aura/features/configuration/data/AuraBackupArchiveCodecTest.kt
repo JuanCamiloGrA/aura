@@ -1,6 +1,7 @@
 package com.humans.aura.features.configuration.data
 
 import com.humans.aura.core.domain.models.AppPreferencesSnapshot
+import com.humans.aura.core.domain.models.AppThemeModePreference
 import com.humans.aura.core.domain.models.AuraBackupActivityRecord
 import com.humans.aura.core.domain.models.AuraBackupArchive
 import com.humans.aura.features.configuration.domain.InvalidBackupArchiveException
@@ -23,7 +24,10 @@ class AuraBackupArchiveCodecTest {
         val archive = AuraBackupArchive(
             schemaVersion = AuraBackupArchiveCodec.SUPPORTED_SCHEMA_VERSION,
             exportedAtEpochMillis = 123L,
-            appPreferences = AppPreferencesSnapshot(hasCompletedInitialStopwatchBootstrap = true),
+            appPreferences = AppPreferencesSnapshot(
+                hasCompletedInitialStopwatchBootstrap = true,
+                themeModePreference = AppThemeModePreference.DARK,
+            ),
             activities = listOf(
                 AuraBackupActivityRecord(
                     id = 1L,

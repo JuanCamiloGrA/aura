@@ -2,17 +2,23 @@ package com.humans.aura.features.configuration.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.humans.aura.core.domain.models.AppThemeModePreference
 import com.humans.aura.features.configuration.domain.CreateBackupFileNameUseCase
+import com.humans.aura.features.configuration.domain.ObserveThemeModePreferenceUseCase
 import com.humans.aura.features.configuration.domain.ExportBackupToDocumentUseCase
 import com.humans.aura.features.configuration.domain.RestoreBackupFromDocumentUseCase
+import com.humans.aura.features.configuration.domain.SetThemeModePreferenceUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ConfigurationViewModel(
     private val createBackupFileNameUseCase: CreateBackupFileNameUseCase,
+    private val observeThemeModePreferenceUseCase: ObserveThemeModePreferenceUseCase,
+    private val setThemeModePreferenceUseCase: SetThemeModePreferenceUseCase,
     private val exportBackupToDocumentUseCase: ExportBackupToDocumentUseCase,
     private val restoreBackupFromDocumentUseCase: RestoreBackupFromDocumentUseCase,
 ) : ViewModel() {
@@ -23,6 +29,16 @@ class ConfigurationViewModel(
         ),
     )
     val uiState: StateFlow<ConfigurationUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            observeThemeModePreferenceUseCase().collectLatest { themeModePreference ->
+                _uiState.update { currentState ->
+                    currentState.copy(themeModePreference = themeModePreference)
+                }
+            }
+        }
+    }
 
     fun refreshSuggestedBackupFileName(): String {
         val fileName = createBackupFileNameUseCase()
@@ -99,6 +115,14 @@ class ConfigurationViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun setThemeModePreference(themeModePreference: AppThemeModePreference) {
+        if (_uiState.value.themeModePreference == themeModePreference) return
+
+        viewModelScope.launch {
+            setThemeModePreferenceUseCase(themeModePreference)
         }
     }
 }

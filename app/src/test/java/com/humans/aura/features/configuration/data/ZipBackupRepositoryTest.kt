@@ -2,6 +2,7 @@ package com.humans.aura.features.configuration.data
 
 import com.humans.aura.core.domain.interfaces.AppPreferencesRepository
 import com.humans.aura.core.domain.interfaces.BackupRepository
+import com.humans.aura.core.domain.models.AppThemeModePreference
 import com.humans.aura.core.services.database.ActivityPredictionEntity
 import com.humans.aura.core.domain.models.AppPreferencesSnapshot
 import com.humans.aura.core.domain.models.AuraBackupArchive
@@ -44,7 +45,10 @@ class ZipBackupRepositoryTest {
             messages = mutableListOf(ChatMessageEntity(1, 1, "USER", "Hi", "Hi", "en", 2L, false)),
         )
         val appPreferencesRepository = FakeAppPreferencesRepository(
-            snapshot = AppPreferencesSnapshot(hasCompletedInitialStopwatchBootstrap = true),
+            snapshot = AppPreferencesSnapshot(
+                hasCompletedInitialStopwatchBootstrap = true,
+                themeModePreference = AppThemeModePreference.DARK,
+            ),
         )
         val codec = FakeAuraBackupArchiveCodec()
         val repository: BackupRepository = ZipBackupRepository(
@@ -68,6 +72,7 @@ class ZipBackupRepositoryTest {
         assertEquals(1, exported.chatSessions.size)
         assertEquals(1, exported.chatMessages.size)
         assertTrue(exported.appPreferences.hasCompletedInitialStopwatchBootstrap)
+        assertEquals(AppThemeModePreference.DARK, exported.appPreferences.themeModePreference)
     }
 
     @Test
@@ -77,12 +82,18 @@ class ZipBackupRepositoryTest {
         val daySummaryDao = FakeDaySummaryDao()
         val chatDao = FakeChatDao()
         val appPreferencesRepository = FakeAppPreferencesRepository(
-            snapshot = AppPreferencesSnapshot(hasCompletedInitialStopwatchBootstrap = false),
+            snapshot = AppPreferencesSnapshot(
+                hasCompletedInitialStopwatchBootstrap = false,
+                themeModePreference = AppThemeModePreference.DEVICE,
+            ),
         )
         val archive = AuraBackupArchive(
             schemaVersion = AuraBackupArchiveCodec.SUPPORTED_SCHEMA_VERSION,
             exportedAtEpochMillis = 1234L,
-            appPreferences = AppPreferencesSnapshot(hasCompletedInitialStopwatchBootstrap = true),
+            appPreferences = AppPreferencesSnapshot(
+                hasCompletedInitialStopwatchBootstrap = true,
+                themeModePreference = AppThemeModePreference.LIGHT,
+            ),
             activities = listOf(com.humans.aura.core.domain.models.AuraBackupActivityRecord(7, "Plan", 1L, null, "ACTIVE", false)),
             dailyGoals = listOf(com.humans.aura.core.domain.models.AuraBackupDailyGoalRecord(4, 11L, "Protect focus", false)),
             goalSubtasks = listOf(com.humans.aura.core.domain.models.AuraBackupGoalSubtaskRecord(5, 4, "Review", false, 0, false)),
@@ -111,6 +122,7 @@ class ZipBackupRepositoryTest {
         assertEquals(1, chatDao.sessions.size)
         assertEquals(1, chatDao.messages.size)
         assertEquals(true, appPreferencesRepository.restoredSnapshot?.hasCompletedInitialStopwatchBootstrap)
+        assertEquals(AppThemeModePreference.LIGHT, appPreferencesRepository.restoredSnapshot?.themeModePreference)
         assertEquals(1, summary.activitiesCount)
         assertEquals(1, summary.chatMessagesCount)
     }

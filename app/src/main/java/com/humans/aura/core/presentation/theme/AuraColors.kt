@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 // Black → Ink → Dark → Medium → Light → Mist → Snow → White.
 
 val AuraBlack = Color(0xFF000000)
+val AuraDarkestSurface = Color(0xFF0A0A0A)
 val AuraInk = Color(0xFF1A1A1A)
 val AuraDark = Color(0xFF333333)
 val AuraMedium = Color(0xFF888888)

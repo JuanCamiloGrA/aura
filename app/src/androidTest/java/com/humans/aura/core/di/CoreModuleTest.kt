@@ -20,6 +20,7 @@ import com.humans.aura.core.domain.interfaces.DailyGoalRepository
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
 import com.humans.aura.core.domain.interfaces.SyncScheduler
 import com.humans.aura.core.domain.interfaces.TimeProvider
+import com.humans.aura.core.domain.interfaces.ThemePreferenceRepository
 import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
 import com.humans.aura.core.services.ai.AiModelSelector
@@ -77,6 +78,7 @@ class CoreModuleTest {
                 get<AppPreferencesRepository>()
                 get<BackupDocumentRepository>()
                 get<WorkManager>()
+                get<ThemePreferenceRepository>()
                 get<SyncScheduler>()
                 get<WallpaperController>()
                 get<AiCredentialsProvider>()

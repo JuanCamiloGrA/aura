@@ -11,12 +11,14 @@ import com.humans.aura.core.domain.interfaces.ConversationContextRepository
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
 import com.humans.aura.core.domain.interfaces.SyncScheduler
+import com.humans.aura.core.domain.interfaces.ThemePreferenceRepository
 import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
 import com.humans.aura.core.domain.models.AiRequest
 import com.humans.aura.core.domain.models.AiResponse
+import com.humans.aura.core.domain.models.AppThemeModePreference
 import com.humans.aura.core.domain.models.ChatMessage
 import com.humans.aura.core.domain.models.ChatRole
 import com.humans.aura.core.domain.models.ChatSession
@@ -30,8 +32,10 @@ import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatSessionsUseCase
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
 import com.humans.aura.features.configuration.domain.CreateBackupFileNameUseCase
+import com.humans.aura.features.configuration.domain.ObserveThemeModePreferenceUseCase
 import com.humans.aura.features.configuration.domain.ExportBackupToDocumentUseCase
 import com.humans.aura.features.configuration.domain.RestoreBackupFromDocumentUseCase
+import com.humans.aura.features.configuration.domain.SetThemeModePreferenceUseCase
 import com.humans.aura.features.daily_goals.domain.ClearTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayActivitiesUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayGoalUseCase
@@ -84,6 +88,7 @@ class UseCaseModuleTest {
         val fakeWallpaperController = FakeWallpaperController()
         val fakeTimeProvider = FakeTimeProvider()
         val fakeSyncScheduler = FakeSyncScheduler()
+        val fakeThemePreferenceRepository = FakeThemePreferenceRepository()
 
         val app = koinApplication {
             modules(
@@ -101,6 +106,7 @@ class UseCaseModuleTest {
                     single<WallpaperController> { fakeWallpaperController }
                     single<TimeProvider> { fakeTimeProvider }
                     single<SyncScheduler> { fakeSyncScheduler }
+                    single<ThemePreferenceRepository> { fakeThemePreferenceRepository }
                     single {
                         Json {
                             ignoreUnknownKeys = true
@@ -128,6 +134,8 @@ class UseCaseModuleTest {
                 get<ToggleGoalSubtaskUseCase>()
                 get<ClearTodayGoalUseCase>()
                 get<CreateBackupFileNameUseCase>()
+                get<ObserveThemeModePreferenceUseCase>()
+                get<SetThemeModePreferenceUseCase>()
                 get<ExportBackupToDocumentUseCase>()
                 get<RestoreBackupFromDocumentUseCase>()
                 get<HandleSleepIntentUseCase>()
@@ -238,6 +246,12 @@ class UseCaseModuleTest {
 
     private class FakeSyncScheduler : SyncScheduler {
         override fun scheduleDayClosureSync() = Unit
+    }
+
+    private class FakeThemePreferenceRepository : ThemePreferenceRepository {
+        override fun observeThemeModePreference(): Flow<AppThemeModePreference> = MutableStateFlow(AppThemeModePreference.DEVICE)
+
+        override suspend fun setThemeModePreference(themeModePreference: AppThemeModePreference) = Unit
     }
 
     private companion object {
