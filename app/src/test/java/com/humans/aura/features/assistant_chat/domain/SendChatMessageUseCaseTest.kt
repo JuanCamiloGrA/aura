@@ -77,6 +77,8 @@ class SendChatMessageUseCaseTest {
 
         override suspend fun ensureActiveSession(): ChatSession = session
 
+        override suspend fun clearConversation() = Unit
+
         override suspend fun appendUserMessage(
             sessionId: Long,
             originalText: String,

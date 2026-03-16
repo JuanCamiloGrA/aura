@@ -19,8 +19,8 @@ import com.humans.aura.core.domain.interfaces.ChatRepository
 import com.humans.aura.core.domain.interfaces.DailyGoalRepository
 import com.humans.aura.core.domain.interfaces.DaySummaryRepository
 import com.humans.aura.core.domain.interfaces.SyncScheduler
-import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.interfaces.ThemePreferenceRepository
+import com.humans.aura.core.domain.interfaces.TimeProvider
 import com.humans.aura.core.domain.interfaces.WallpaperController
 import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
 import com.humans.aura.core.services.ai.AiModelSelector
@@ -76,9 +76,9 @@ class CoreModuleTest {
                 get<CurrentTimeTicker>()
                 get<AppLaunchRepository>()
                 get<AppPreferencesRepository>()
+                get<ThemePreferenceRepository>()
                 get<BackupDocumentRepository>()
                 get<WorkManager>()
-                get<ThemePreferenceRepository>()
                 get<SyncScheduler>()
                 get<WallpaperController>()
                 get<AiCredentialsProvider>()
@@ -139,6 +139,7 @@ class CoreModuleTest {
         override fun observeMessages(sessionId: Long): Flow<List<ChatMessage>> = MutableStateFlow(emptyList())
         override suspend fun getRecentMessages(sessionId: Long, limit: Int): List<ChatMessage> = emptyList()
         override suspend fun ensureActiveSession(): ChatSession = ChatSession(1, "Daily assistant", 1L, 1L, false)
+        override suspend fun clearConversation() = Unit
         override suspend fun appendUserMessage(sessionId: Long, originalText: String, normalizedEnglishText: String, sourceLanguageCode: String): ChatMessage =
             ChatMessage(1, sessionId, ChatRole.USER, originalText, normalizedEnglishText, sourceLanguageCode, 1L, false)
 

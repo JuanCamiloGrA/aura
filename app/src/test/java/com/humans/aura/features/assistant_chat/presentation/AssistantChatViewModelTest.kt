@@ -13,6 +13,7 @@ import com.humans.aura.core.domain.models.ChatRole
 import com.humans.aura.core.domain.models.ChatSession
 import com.humans.aura.core.domain.models.DaySummaryContext
 import com.humans.aura.features.assistant_chat.domain.BuildChatPromptUseCase
+import com.humans.aura.features.assistant_chat.domain.ClearChatConversationUseCase
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
@@ -41,6 +42,7 @@ class AssistantChatViewModelTest {
             aiTextGenerator = FakeAiTextGenerator(),
         )
         val viewModel = AssistantChatViewModel(
+            clearChatConversationUseCase = ClearChatConversationUseCase(repository),
             ensureChatSessionUseCase = EnsureChatSessionUseCase(repository),
             observeChatMessagesUseCase = ObserveChatMessagesUseCase(repository),
             sendChatMessageUseCase = sendUseCase,
@@ -62,6 +64,7 @@ class AssistantChatViewModelTest {
             messages = listOf(ChatMessage(1, 7, ChatRole.USER, "hello", "hello", "en", 1L, false)),
         )
         val viewModel = AssistantChatViewModel(
+            clearChatConversationUseCase = ClearChatConversationUseCase(repository),
             ensureChatSessionUseCase = EnsureChatSessionUseCase(repository),
             observeChatMessagesUseCase = ObserveChatMessagesUseCase(repository),
             sendChatMessageUseCase = SendChatMessageUseCase(
@@ -83,17 +86,52 @@ class AssistantChatViewModelTest {
         }
     }
 
+    @Test
+    fun clear_chat_resets_local_state_and_creates_fresh_session() = runTest {
+        val repository = FakeChatRepository(
+            messages = listOf(ChatMessage(1, 7, ChatRole.USER, "hello", "hello", "en", 1L, false)),
+        )
+        val viewModel = AssistantChatViewModel(
+            clearChatConversationUseCase = ClearChatConversationUseCase(repository),
+            ensureChatSessionUseCase = EnsureChatSessionUseCase(repository),
+            observeChatMessagesUseCase = ObserveChatMessagesUseCase(repository),
+            sendChatMessageUseCase = SendChatMessageUseCase(
+                chatRepository = repository,
+                conversationContextRepository = FakeConversationContextRepository(),
+                buildChatPromptUseCase = BuildChatPromptUseCase(),
+                aiTextGenerator = FakeAiTextGenerator(),
+            ),
+            aiCredentialsProvider = FakeAiCredentialsProvider(),
+        )
+        advanceUntilIdle()
+
+        viewModel.onDraftChanged("Plan my reset")
+        viewModel.clearChat()
+        advanceUntilIdle()
+
+        assertEquals(true, repository.cleared)
+        assertEquals(emptyList<ChatMessage>(), viewModel.uiState.value.messages)
+        assertEquals("", viewModel.uiState.value.draftMessage)
+    }
+
     private class FakeChatRepository(
         private val messages: List<ChatMessage> = emptyList(),
     ) : ChatRepository {
         private val session = ChatSession(7, "Daily assistant", 1L, 1L, false)
         private val messagesFlow = MutableStateFlow(messages)
         val userMessages = mutableListOf<ChatMessage>()
+        var cleared = false
 
         override fun observeSessions(): Flow<List<ChatSession>> = MutableStateFlow(listOf(session))
         override fun observeMessages(sessionId: Long): Flow<List<ChatMessage>> = messagesFlow
         override suspend fun getRecentMessages(sessionId: Long, limit: Int): List<ChatMessage> = messages
         override suspend fun ensureActiveSession(): ChatSession = session
+
+        override suspend fun clearConversation() {
+            cleared = true
+            messagesFlow.value = emptyList()
+        }
+
         override suspend fun appendUserMessage(sessionId: Long, originalText: String, normalizedEnglishText: String, sourceLanguageCode: String): ChatMessage {
             return ChatMessage(1, sessionId, ChatRole.USER, originalText, normalizedEnglishText, sourceLanguageCode, 1L, false)
                 .also(userMessages::add)

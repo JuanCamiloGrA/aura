@@ -54,6 +54,10 @@ class RoomChatRepository(
         )
     }
 
+    override suspend fun clearConversation() {
+        chatDao.deleteAllSessions()
+    }
+
     override suspend fun appendUserMessage(
         sessionId: Long,
         originalText: String,

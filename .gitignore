@@ -28,3 +28,6 @@ signing.properties
 release.properties
 /app/samsung/
 /.kotlin
+
+# Windows reserved device name artifact
+nul

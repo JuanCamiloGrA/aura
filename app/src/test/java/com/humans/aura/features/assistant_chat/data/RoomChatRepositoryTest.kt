@@ -100,6 +100,16 @@ class RoomChatRepositoryTest {
         assertEquals(listOf(4L to 700L), dao.updatedSessions)
     }
 
+    @Test
+    fun clear_conversation_deletes_all_sessions() = runTest {
+        val dao = FakeChatDao()
+        val repository = RoomChatRepository(dao, FakeTimeProvider(700))
+
+        repository.clearConversation()
+
+        assertEquals(1, dao.deleteAllSessionsCalls)
+    }
+
     private class FakeChatDao(
         sessions: List<ChatSessionEntity> = emptyList(),
         messagesBySession: MutableMap<Long, List<ChatMessageEntity>> = mutableMapOf(),
@@ -110,6 +120,7 @@ class RoomChatRepositoryTest {
         private val messages = messagesBySession
         var insertSessionCalls = 0
         var insertMessageCalls = 0
+        var deleteAllSessionsCalls = 0
         val updatedSessions = mutableListOf<Pair<Long, Long>>()
 
         override fun observeSessions(): Flow<List<ChatSessionEntity>> = sessionsFlow
@@ -145,7 +156,9 @@ class RoomChatRepositoryTest {
             updatedSessions += sessionId to updatedAtEpochMillis
         }
 
-        override suspend fun deleteAllSessions() = Unit
+        override suspend fun deleteAllSessions() {
+            deleteAllSessionsCalls += 1
+        }
     }
 
     private class FakeTimeProvider(

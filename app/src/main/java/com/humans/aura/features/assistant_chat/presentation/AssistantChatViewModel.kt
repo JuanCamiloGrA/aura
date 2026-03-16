@@ -3,6 +3,7 @@ package com.humans.aura.features.assistant_chat.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.humans.aura.core.domain.interfaces.AiCredentialsProvider
+import com.humans.aura.features.assistant_chat.domain.ClearChatConversationUseCase
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.SendChatMessageUseCase
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AssistantChatViewModel(
+    private val clearChatConversationUseCase: ClearChatConversationUseCase,
     private val ensureChatSessionUseCase: EnsureChatSessionUseCase,
     observeChatMessagesUseCase: ObserveChatMessagesUseCase,
     private val sendChatMessageUseCase: SendChatMessageUseCase,
@@ -97,5 +99,21 @@ class AssistantChatViewModel(
 
     fun sendVoiceMessage(message: String) {
         sendMessage(message)
+    }
+
+    fun clearChat() {
+        if (isSending.value) return
+        viewModelScope.launch {
+            draftMessage.value = ""
+            lastErrorMessage.value = null
+            runCatching {
+                clearChatConversationUseCase()
+                ensureChatSessionUseCase()
+            }.onSuccess { session ->
+                activeSession.value = session
+            }.onFailure { error ->
+                lastErrorMessage.value = error.message ?: "Unable to reset AURA right now"
+            }
+        }
     }
 }

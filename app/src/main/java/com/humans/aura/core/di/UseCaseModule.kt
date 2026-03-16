@@ -19,6 +19,7 @@ import com.humans.aura.features.day_summary.domain.ObserveLatestSummaryUseCase
 import com.humans.aura.features.day_summary.domain.ObserveRecentSummariesUseCase
 import com.humans.aura.features.day_closure.domain.HandleSleepIntentUseCase
 import com.humans.aura.features.assistant_chat.domain.BuildChatPromptUseCase
+import com.humans.aura.features.assistant_chat.domain.ClearChatConversationUseCase
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatSessionsUseCase
@@ -50,10 +51,10 @@ val useCaseModule = module {
     factory { ToggleGoalSubtaskUseCase(get()) }
     factory { ClearTodayGoalUseCase(get()) }
     factory { CreateBackupFileNameUseCase(get()) }
-    factory { ExportBackupToDocumentUseCase(get(), get(), get()) }
-    factory { RestoreBackupFromDocumentUseCase(get(), get()) }
     factory { ObserveThemeModePreferenceUseCase(get()) }
     factory { SetThemeModePreferenceUseCase(get()) }
+    factory { ExportBackupToDocumentUseCase(get(), get(), get()) }
+    factory { RestoreBackupFromDocumentUseCase(get(), get()) }
     factory { HandleSleepIntentUseCase(get(), get(), get(), get()) }
     factory { CreatePendingDaySummaryUseCase(get(), get()) }
     factory { AssembleDaySummaryContextUseCase(get(), get()) }
@@ -62,6 +63,7 @@ val useCaseModule = module {
     factory { ObserveLatestSummaryUseCase(get()) }
     factory { ObserveRecentSummariesUseCase(get()) }
     factory { BuildChatPromptUseCase() }
+    factory { ClearChatConversationUseCase(get()) }
     factory { EnsureChatSessionUseCase(get()) }
     factory { ObserveChatMessagesUseCase(get()) }
     factory { ObserveChatSessionsUseCase(get()) }

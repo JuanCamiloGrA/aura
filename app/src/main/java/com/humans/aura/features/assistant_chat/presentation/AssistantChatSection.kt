@@ -32,6 +32,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,6 +62,7 @@ fun AssistantChatSection(
     AssistantChatSection(
         uiState = uiState,
         onDraftChanged = viewModel::onDraftChanged,
+        onClearChat = viewModel::clearChat,
         onSendMessage = viewModel::sendMessage,
         voiceCaptureButton = { voiceCaptureButton(viewModel::sendVoiceMessage) },
     )
@@ -70,6 +72,7 @@ fun AssistantChatSection(
 fun AssistantChatSection(
     uiState: AssistantChatUiState,
     onDraftChanged: (String) -> Unit,
+    onClearChat: () -> Unit,
     onSendMessage: () -> Unit,
     voiceCaptureButton: @Composable () -> Unit,
 ) {
@@ -125,10 +128,12 @@ fun AssistantChatSection(
             }
         }
 
-        AiConfigurationCard(
-            status = uiState.status,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        )
+        if (!uiState.status.isAiConfigured) {
+            AiConfigurationCard(
+                status = uiState.status,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+        }
 
         // ── Messages / Empty State ──────────────────────────────────────
         Box(
@@ -204,6 +209,26 @@ fun AssistantChatSection(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(
+                    onClick = {
+                        keyboardController?.hide()
+                        onClearChat()
+                    },
+                    enabled = !uiState.isSending && (
+                        uiState.messages.isNotEmpty() ||
+                            uiState.draftMessage.isNotBlank() ||
+                            uiState.lastErrorMessage != null
+                    ),
+                    modifier = Modifier.testTag("assistant_chat_clear_button"),
+                ) {
+                    Text("Clear Chat")
+                }
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Bottom,
@@ -286,17 +311,13 @@ private fun AiConfigurationCard(
     status: AssistantChatStatus,
     modifier: Modifier = Modifier,
 ) {
-    val configured = status.isAiConfigured
+    if (status.isAiConfigured) return
     Card(
         modifier = modifier
             .fillMaxWidth()
             .testTag("assistant_chat_ai_status"),
         colors = CardDefaults.cardColors(
-            containerColor = if (configured) {
-                MaterialTheme.colorScheme.surfaceVariant
-            } else {
-                MaterialTheme.colorScheme.errorContainer
-            },
+            containerColor = MaterialTheme.colorScheme.errorContainer,
         ),
         shape = RoundedCornerShape(18.dp),
     ) {
@@ -305,27 +326,15 @@ private fun AiConfigurationCard(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = if (configured) "AI connected" else "AI key missing",
+                text = "AI key missing",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = if (configured) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onErrorContainer
-                },
+                color = MaterialTheme.colorScheme.onErrorContainer,
             )
             Text(
-                text = if (configured) {
-                    "AI is configured. Chat and summaries can reach the model."
-                } else {
-                    "Add your AI API key to local properties so AI features can respond."
-                },
+                text = "Add your AI API key to local properties so AI features can respond.",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (configured) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.onErrorContainer
-                },
+                color = MaterialTheme.colorScheme.onErrorContainer,
             )
         }
     }

@@ -16,6 +16,8 @@ interface ChatRepository {
 
     suspend fun ensureActiveSession(): ChatSession
 
+    suspend fun clearConversation()
+
     suspend fun appendUserMessage(
         sessionId: Long,
         originalText: String,

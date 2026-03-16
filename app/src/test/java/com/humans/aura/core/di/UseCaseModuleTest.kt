@@ -27,6 +27,7 @@ import com.humans.aura.core.domain.models.DaySummaryContext
 import com.humans.aura.core.domain.models.DailyGoal
 import com.humans.aura.core.domain.models.AuraBackupSummary
 import com.humans.aura.features.assistant_chat.domain.BuildChatPromptUseCase
+import com.humans.aura.features.assistant_chat.domain.ClearChatConversationUseCase
 import com.humans.aura.features.assistant_chat.domain.EnsureChatSessionUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatMessagesUseCase
 import com.humans.aura.features.assistant_chat.domain.ObserveChatSessionsUseCase
@@ -146,6 +147,7 @@ class UseCaseModuleTest {
                 get<ObserveLatestSummaryUseCase>()
                 get<ObserveRecentSummariesUseCase>()
                 get<BuildChatPromptUseCase>()
+                get<ClearChatConversationUseCase>()
                 get<EnsureChatSessionUseCase>()
                 get<ObserveChatMessagesUseCase>()
                 get<ObserveChatSessionsUseCase>()
@@ -206,6 +208,7 @@ class UseCaseModuleTest {
         override fun observeMessages(sessionId: Long): Flow<List<ChatMessage>> = MutableStateFlow(emptyList())
         override suspend fun getRecentMessages(sessionId: Long, limit: Int): List<ChatMessage> = emptyList()
         override suspend fun ensureActiveSession(): ChatSession = ChatSession(1, "Daily assistant", 1L, 1L, false)
+        override suspend fun clearConversation() = Unit
         override suspend fun appendUserMessage(sessionId: Long, originalText: String, normalizedEnglishText: String, sourceLanguageCode: String): ChatMessage =
             ChatMessage(1, sessionId, ChatRole.USER, originalText, normalizedEnglishText, sourceLanguageCode, 1L, false)
 
