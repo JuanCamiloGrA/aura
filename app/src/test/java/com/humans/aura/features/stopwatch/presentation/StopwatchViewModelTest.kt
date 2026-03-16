@@ -14,6 +14,7 @@ import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveRecentActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.PredictNextActivityTitleUseCase
+import com.humans.aura.features.stopwatch.domain.UpdateCurrentActivityTitleUseCase
 import com.humans.aura.features.stopwatch.domain.UpdateCurrentActivityStatusUseCase
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -223,6 +224,43 @@ class StopwatchViewModelTest {
     }
 
     @Test
+    fun open_and_save_title_editor_updates_current_activity_title() = runTest {
+        val activityRepository = FakeActivityRepository(
+            current = Activity(1, "Deep Work", 0L, null, ActivityStatus.ACTIVE, false),
+        )
+        val viewModel = createViewModel(activityRepository)
+        startCollecting(viewModel)
+        advanceUntilIdle()
+
+        viewModel.openTitleEditor()
+        viewModel.onEditingTitleChanged("  Refined task  ")
+        viewModel.saveCurrentActivityTitle()
+        advanceUntilIdle()
+
+        assertEquals("Refined task", activityRepository.updatedTitle)
+        assertEquals("Refined task", viewModel.uiState.value.currentActivity?.title)
+        assertEquals(false, viewModel.uiState.value.isTitleEditorVisible)
+    }
+
+    @Test
+    fun dismiss_title_editor_clears_editor_state() = runTest {
+        val activityRepository = FakeActivityRepository(
+            current = Activity(1, "Deep Work", 0L, null, ActivityStatus.ACTIVE, false),
+        )
+        val viewModel = createViewModel(activityRepository)
+        startCollecting(viewModel)
+        advanceUntilIdle()
+
+        viewModel.openTitleEditor()
+        viewModel.onEditingTitleChanged("Changed")
+        viewModel.dismissTitleEditor()
+        advanceUntilIdle()
+
+        assertEquals(false, viewModel.uiState.value.isTitleEditorVisible)
+        assertEquals("", viewModel.uiState.value.editingTitle)
+    }
+
+    @Test
     fun init_bootstraps_first_activity_when_history_is_empty() = runTest {
         val activityRepository = FakeActivityRepository(hasLoggedActivities = false)
         val appLaunchRepository = FakeAppLaunchRepository(hasBootstrapped = false)
@@ -302,6 +340,7 @@ class StopwatchViewModelTest {
         ),
         logNewActivityUseCase = LogNewActivityUseCase(activityRepository, FakeTimeProvider(now)),
         predictNextActivityTitleUseCase = PredictNextActivityTitleUseCase(activityRepository, FakeTimeProvider(now)),
+        updateCurrentActivityTitleUseCase = UpdateCurrentActivityTitleUseCase(activityRepository),
         updateCurrentActivityStatusUseCase = UpdateCurrentActivityStatusUseCase(activityRepository),
         timeProvider = FakeTimeProvider(now),
         currentTimeTicker = currentTimeTicker,
@@ -325,6 +364,7 @@ class StopwatchViewModelTest {
         private val recentFlow = MutableStateFlow(recent)
         val loggedTitles = mutableListOf<String>()
         val updatedStatuses = mutableListOf<ActivityStatus>()
+        var updatedTitle: String? = null
         var predictCalls = 0
 
         override suspend fun hasLoggedActivities(): Boolean = hasLoggedActivities
@@ -352,6 +392,11 @@ class StopwatchViewModelTest {
 
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) {
             updatedStatuses += status
+        }
+
+        override suspend fun updateCurrentActivityTitle(title: String) {
+            updatedTitle = title
+            currentFlow.value = currentFlow.value?.copy(title = title)
         }
     }
 

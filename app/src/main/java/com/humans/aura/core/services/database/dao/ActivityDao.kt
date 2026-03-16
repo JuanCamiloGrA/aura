@@ -77,6 +77,11 @@ interface ActivityDao {
     )
     suspend fun updateCurrentActivityStatus(status: String): Int
 
+    @Query(
+        "UPDATE activities SET title = :title, is_synced_to_d1 = 0 WHERE id = (SELECT id FROM activities WHERE end_time_epoch_millis IS NULL ORDER BY start_time_epoch_millis DESC LIMIT 1)",
+    )
+    suspend fun updateCurrentActivityTitle(title: String): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(activities: List<ActivityEntity>)
 

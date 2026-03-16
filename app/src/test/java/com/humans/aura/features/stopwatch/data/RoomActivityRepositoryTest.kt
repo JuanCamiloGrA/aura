@@ -83,6 +83,16 @@ class RoomActivityRepositoryTest {
         assertEquals("INACCURATE", dao.updatedStatus)
     }
 
+    @Test
+    fun update_current_title_delegates_to_dao() = runTest {
+        val dao = FakeActivityDao()
+        val repository = RoomActivityRepository(dao, FakeTimeProvider(), FakeIntentMediator())
+
+        repository.updateCurrentActivityTitle("  Refined task  ")
+
+        assertEquals("Refined task", dao.updatedTitle)
+    }
+
     private class FakeActivityDao(
         current: ActivityEntity? = null,
         private val inserted: ActivityEntity? = null,
@@ -93,6 +103,7 @@ class RoomActivityRepositoryTest {
         private val recentFlow = MutableStateFlow<List<ActivityEntity>>(emptyList())
         private val dayFlow = MutableStateFlow<List<ActivityEntity>>(emptyList())
         var updatedStatus: String? = null
+        var updatedTitle: String? = null
 
         override suspend fun countActivities(): Int = activityCount
         override fun observeCurrentActivity(): Flow<ActivityEntity?> = currentFlow.asStateFlow()
@@ -106,6 +117,11 @@ class RoomActivityRepositoryTest {
 
         override suspend fun updateCurrentActivityStatus(status: String): Int {
             updatedStatus = status
+            return 1
+        }
+
+        override suspend fun updateCurrentActivityTitle(title: String): Int {
+            updatedTitle = title
             return 1
         }
 

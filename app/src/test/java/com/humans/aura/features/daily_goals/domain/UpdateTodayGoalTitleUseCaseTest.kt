@@ -11,52 +11,38 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SaveTodayGoalUseCaseTest {
+class UpdateTodayGoalTitleUseCaseTest {
 
     @Test
-    fun invoke_filters_blank_subtasks_and_updates_wallpaper() = runTest {
+    fun invoke_trims_title_updates_repository_and_wallpaper() = runTest {
         val repository = FakeDailyGoalRepository()
         val wallpaperController = FakeWallpaperController()
 
-        SaveTodayGoalUseCase(repository, wallpaperController).invoke(
-            mainTitle = "Ship MVP",
-            subtasks = listOf(
-                GoalSubtaskDraft("First", false),
-                GoalSubtaskDraft("   ", false),
-            ),
-        )
+        UpdateTodayGoalTitleUseCase(repository, wallpaperController).invoke("  Ship milestone  ")
 
-        assertEquals("Ship MVP", repository.mainTitle)
-        assertEquals(listOf("First"), repository.subtasks.map { it.title })
-        assertEquals("Ship MVP", wallpaperController.workTitles.single())
+        assertEquals("Ship milestone", repository.updatedTitle)
+        assertEquals("Ship milestone", wallpaperController.workTitles.single())
     }
 
     @Test
-    fun invoke_rejects_blank_main_title() = runTest {
+    fun invoke_rejects_blank_title() = runTest {
         val error = runCatching {
-            SaveTodayGoalUseCase(FakeDailyGoalRepository(), FakeWallpaperController()).invoke("   ", emptyList())
+            UpdateTodayGoalTitleUseCase(FakeDailyGoalRepository(), FakeWallpaperController()).invoke("   ")
         }.exceptionOrNull()
 
         assertTrue(error is IllegalArgumentException)
     }
 
     private class FakeDailyGoalRepository : DailyGoalRepository {
-        var mainTitle: String? = null
-        var subtasks: List<GoalSubtaskDraft> = emptyList()
+        var updatedTitle: String? = null
 
         override fun observeTodayGoal(): Flow<DailyGoal?> = emptyFlow()
-
         override suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoal? = null
-
-        override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<GoalSubtaskDraft>) {
-            this.mainTitle = mainTitle
-            this.subtasks = subtasks
+        override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<GoalSubtaskDraft>) = Unit
+        override suspend fun updateTodayGoalTitle(title: String) {
+            updatedTitle = title
         }
-
-        override suspend fun updateTodayGoalTitle(title: String) = Unit
-
         override suspend fun toggleSubtask(subtaskId: Long, isCompleted: Boolean) = Unit
-
         override suspend fun clearTodayGoal() = Unit
     }
 

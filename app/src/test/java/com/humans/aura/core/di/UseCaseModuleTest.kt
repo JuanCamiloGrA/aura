@@ -158,6 +158,7 @@ class UseCaseModuleTest {
         override fun observeActivitiesForDay(dayStartEpochMillis: Long): Flow<List<Activity>> = MutableStateFlow(emptyList())
         override suspend fun logNewActivity(command: LogNewActivityCommand): Activity = error("unused")
         override suspend fun predictNextTitle(nowEpochMillis: Long): ActivityPrediction? = null
+        override suspend fun updateCurrentActivityTitle(title: String) = Unit
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
     }
 
@@ -171,6 +172,7 @@ class UseCaseModuleTest {
         override fun observeTodayGoal(): Flow<DailyGoal?> = MutableStateFlow(null)
         override suspend fun getGoalForDay(dayStartEpochMillis: Long): DailyGoal? = null
         override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<com.humans.aura.core.domain.models.GoalSubtaskDraft>) = Unit
+        override suspend fun updateTodayGoalTitle(title: String) = Unit
         override suspend fun toggleSubtask(subtaskId: Long, isCompleted: Boolean) = Unit
         override suspend fun clearTodayGoal() = Unit
     }

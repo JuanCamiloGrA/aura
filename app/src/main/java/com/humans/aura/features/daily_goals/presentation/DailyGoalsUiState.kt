@@ -8,6 +8,8 @@ data class DailyGoalsUiState(
     val mainTitleInput: String = "",
     val subtaskInputs: List<String> = listOf("", "", ""),
     val todayActivities: List<Activity> = emptyList(),
+    val editingTitle: String = "",
+    val isTitleEditorVisible: Boolean = false,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val isTogglingSubtask: Boolean = false,

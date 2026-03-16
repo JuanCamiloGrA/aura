@@ -77,4 +77,23 @@ class ActivityDaoTest {
 
         assertEquals("Review", prediction?.title)
     }
+
+    @Test
+    fun update_current_activity_title_updates_open_activity() = runTest {
+        val activityId = dao.insert(
+            ActivityEntity(
+                title = "Planning",
+                startTimeEpochMillis = 10L,
+                endTimeEpochMillis = null,
+                status = "ACTIVE",
+                isSyncedToD1 = true,
+            ),
+        )
+
+        dao.updateCurrentActivityTitle("Refined title")
+
+        val updated = dao.getById(activityId)
+        assertEquals("Refined title", updated?.title)
+        assertEquals(false, updated?.isSyncedToD1)
+    }
 }

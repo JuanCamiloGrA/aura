@@ -10,6 +10,8 @@ data class StopwatchUiState(
     val prediction: ActivityPrediction? = null,
     val isPredictionAutofilled: Boolean = false,
     val runningDurationLabel: String = "00:00:00",
+    val editingTitle: String = "",
+    val isTitleEditorVisible: Boolean = false,
     val isLoading: Boolean = false,
     val isLogging: Boolean = false,
     val isVoiceLoggingEnabled: Boolean = true,

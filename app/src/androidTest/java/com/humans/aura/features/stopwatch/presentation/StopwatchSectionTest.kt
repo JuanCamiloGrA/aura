@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.humans.aura.core.domain.models.Activity
@@ -263,5 +264,81 @@ class StopwatchSectionTest {
         }
 
         composeRule.onNodeWithText("Enable microphone access").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_current_activity_opens_title_editor_and_voice_can_fill_it() {
+        var editedTitle = "Focus"
+        var saved = 0
+
+        composeRule.setContent {
+            AuraTheme {
+                StopwatchSection(
+                    uiState = StopwatchUiState(
+                        currentActivity = Activity(1, "Focus", 0L, null, ActivityStatus.ACTIVE, false),
+                        editingTitle = editedTitle,
+                        isTitleEditorVisible = true,
+                    ),
+                    onDraftTitleChanged = {},
+                    onUsePrediction = {},
+                    onRefreshPrediction = {},
+                    onLogNewActivity = {},
+                    onLogVoiceActivity = {},
+                    onOpenTitleEditor = {},
+                    onEditingTitleChanged = { editedTitle = it },
+                    onSaveEditedTitle = { saved += 1 },
+                    onDismissTitleEditor = {},
+                    onMarkInaccurate = {},
+                    onMarkLost = {},
+                    onClearHonestyLabel = {},
+                    voiceCaptureButton = { Text("HOLD TO TALK FOR NEW ACTIVITY") },
+                    titleEditorVoiceCaptureButton = { onTranscribed ->
+                        TextButton(onClick = { onTranscribed("Voice renamed task") }) {
+                            Text("VOICE RENAME")
+                        }
+                    },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("task_title_editor_dialog").assertIsDisplayed()
+        composeRule.onNodeWithText("VOICE RENAME").performClick()
+        composeRule.onNodeWithTag("task_title_editor_input").assertIsDisplayed()
+        composeRule.onNodeWithTag("task_title_editor_save_button").assertIsEnabled().performClick()
+
+        assertEquals("Voice renamed task", editedTitle)
+        assertEquals(1, saved)
+    }
+
+    @Test
+    fun tapping_current_activity_title_triggers_edit_callback() {
+        var opened = 0
+
+        composeRule.setContent {
+            AuraTheme {
+                StopwatchSection(
+                    uiState = StopwatchUiState(
+                        currentActivity = Activity(1, "Focus", 0L, null, ActivityStatus.ACTIVE, false),
+                    ),
+                    onDraftTitleChanged = {},
+                    onUsePrediction = {},
+                    onRefreshPrediction = {},
+                    onLogNewActivity = {},
+                    onLogVoiceActivity = {},
+                    onOpenTitleEditor = { opened += 1 },
+                    onEditingTitleChanged = {},
+                    onSaveEditedTitle = {},
+                    onDismissTitleEditor = {},
+                    onMarkInaccurate = {},
+                    onMarkLost = {},
+                    onClearHonestyLabel = {},
+                    voiceCaptureButton = { Text("HOLD TO TALK FOR NEW ACTIVITY") },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("current_activity_title").performClick()
+
+        assertEquals(1, opened)
     }
 }

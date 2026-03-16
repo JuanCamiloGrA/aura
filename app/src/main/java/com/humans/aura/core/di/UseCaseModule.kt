@@ -5,6 +5,7 @@ import com.humans.aura.features.daily_goals.domain.ObserveTodayActivitiesUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.SaveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ToggleGoalSubtaskUseCase
+import com.humans.aura.features.daily_goals.domain.UpdateTodayGoalTitleUseCase
 import com.humans.aura.features.configuration.domain.CreateBackupFileNameUseCase
 import com.humans.aura.features.configuration.domain.ExportBackupToDocumentUseCase
 import com.humans.aura.features.configuration.domain.RestoreBackupFromDocumentUseCase
@@ -25,6 +26,7 @@ import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveRecentActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.PredictNextActivityTitleUseCase
+import com.humans.aura.features.stopwatch.domain.UpdateCurrentActivityTitleUseCase
 import com.humans.aura.features.stopwatch.domain.UpdateCurrentActivityStatusUseCase
 import com.humans.aura.features.voice.domain.ShouldAcceptTranscriptionUseCase
 import com.humans.aura.features.voice.domain.SpeakAssistantReplyUseCase
@@ -37,10 +39,12 @@ val useCaseModule = module {
     factory { EnsureInitialActivityUseCase(get(), get(), get()) }
     factory { LogNewActivityUseCase(get(), get()) }
     factory { PredictNextActivityTitleUseCase(get(), get()) }
+    factory { UpdateCurrentActivityTitleUseCase(get()) }
     factory { UpdateCurrentActivityStatusUseCase(get()) }
     factory { ObserveTodayGoalUseCase(get()) }
     factory { ObserveTodayActivitiesUseCase(get(), get()) }
     factory { SaveTodayGoalUseCase(get(), get()) }
+    factory { UpdateTodayGoalTitleUseCase(get(), get()) }
     factory { ToggleGoalSubtaskUseCase(get()) }
     factory { ClearTodayGoalUseCase(get()) }
     factory { CreateBackupFileNameUseCase(get()) }

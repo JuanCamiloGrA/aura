@@ -38,6 +38,7 @@ class PredictNextActivityTitleUseCaseTest {
             return ActivityPrediction("Review", 3, 500L)
         }
 
+        override suspend fun updateCurrentActivityTitle(title: String) = Unit
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
     }
 

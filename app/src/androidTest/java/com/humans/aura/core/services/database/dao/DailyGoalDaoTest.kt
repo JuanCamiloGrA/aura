@@ -81,4 +81,19 @@ class DailyGoalDaoTest {
         assertEquals(true, updatedSubtask?.isCompleted)
         assertEquals(false, updatedSubtask?.isSyncedToD1)
     }
+
+    @Test
+    fun update_goal_title_updates_title_and_sync_flag() = runTest {
+        dao.saveGoalWithSubtasks(
+            dayStartEpochMillis = 0L,
+            mainTitle = "Old title",
+            subtasks = emptyList(),
+        )
+
+        dao.updateGoalTitle(dayStartEpochMillis = 0L, mainTitle = "New title")
+
+        val goal = dao.getGoalForDay(0L)
+        assertEquals("New title", goal?.mainTitle)
+        assertEquals(false, goal?.isSyncedToD1)
+    }
 }

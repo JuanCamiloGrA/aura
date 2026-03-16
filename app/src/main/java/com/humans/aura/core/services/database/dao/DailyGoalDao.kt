@@ -39,6 +39,9 @@ interface DailyGoalDao {
     @Update
     suspend fun updateGoal(goal: DailyGoalEntity)
 
+    @Query("UPDATE daily_goals SET main_title = :mainTitle, is_synced_to_d1 = 0 WHERE day_start_epoch_millis = :dayStartEpochMillis")
+    suspend fun updateGoalTitle(dayStartEpochMillis: Long, mainTitle: String)
+
     @Insert
     suspend fun insertSubtasks(subtasks: List<GoalSubtaskEntity>)
 

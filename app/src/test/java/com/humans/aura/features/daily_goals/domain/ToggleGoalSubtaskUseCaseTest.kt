@@ -29,6 +29,8 @@ class ToggleGoalSubtaskUseCaseTest {
 
         override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<GoalSubtaskDraft>) = Unit
 
+        override suspend fun updateTodayGoalTitle(title: String) = Unit
+
         override suspend fun toggleSubtask(subtaskId: Long, isCompleted: Boolean) {
             toggledSubtask = subtaskId to isCompleted
         }

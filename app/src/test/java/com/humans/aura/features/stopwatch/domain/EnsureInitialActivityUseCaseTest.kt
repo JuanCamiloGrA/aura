@@ -94,6 +94,8 @@ class EnsureInitialActivityUseCaseTest {
 
         override suspend fun predictNextTitle(nowEpochMillis: Long): ActivityPrediction? = null
 
+        override suspend fun updateCurrentActivityTitle(title: String) = Unit
+
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
     }
 

@@ -50,6 +50,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.DailyGoal
 import com.humans.aura.core.domain.models.GoalSubtask
+import com.humans.aura.core.presentation.components.TaskTitleEditorDialog
+import com.humans.aura.features.voice.presentation.VoiceCaptureButton
 import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
 import java.time.ZoneId
@@ -58,6 +60,12 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun DailyGoalsSection(
     viewModel: DailyGoalsViewModel = koinViewModel(),
+    titleEditorVoiceCaptureButton: @Composable ((String) -> Unit) -> Unit = { onTranscribed ->
+        VoiceCaptureButton(
+            onSendTranscript = onTranscribed,
+            idleLabel = "HOLD TO SPEAK TITLE",
+        )
+    },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -65,9 +73,14 @@ fun DailyGoalsSection(
         uiState = uiState,
         onMainTitleChanged = viewModel::onMainTitleChanged,
         onSubtaskChanged = viewModel::onSubtaskChanged,
+        onOpenTitleEditor = viewModel::openTitleEditor,
+        onEditingTitleChanged = viewModel::onEditingTitleChanged,
+        onSaveEditedTitle = viewModel::saveEditedTitle,
+        onDismissTitleEditor = viewModel::dismissTitleEditor,
         onToggleSubtask = viewModel::toggleSubtask,
         onSaveTodayGoal = viewModel::saveTodayGoal,
         onClearTodayGoal = viewModel::clearTodayGoal,
+        titleEditorVoiceCaptureButton = titleEditorVoiceCaptureButton,
     )
 }
 
@@ -76,9 +89,19 @@ fun DailyGoalsSection(
     uiState: DailyGoalsUiState,
     onMainTitleChanged: (String) -> Unit,
     onSubtaskChanged: (Int, String) -> Unit,
+    onOpenTitleEditor: () -> Unit = {},
+    onEditingTitleChanged: (String) -> Unit = {},
+    onSaveEditedTitle: () -> Unit = {},
+    onDismissTitleEditor: () -> Unit = {},
     onToggleSubtask: (Long, Boolean) -> Unit,
     onSaveTodayGoal: () -> Unit,
     onClearTodayGoal: () -> Unit,
+    titleEditorVoiceCaptureButton: @Composable ((String) -> Unit) -> Unit = { onTranscribed ->
+        VoiceCaptureButton(
+            onSendTranscript = onTranscribed,
+            idleLabel = "HOLD TO SPEAK TITLE",
+        )
+    },
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -118,7 +141,7 @@ fun DailyGoalsSection(
         }
 
         // ── Goal Highlight Hero ─────────────────────────────────────────
-        GoalHighlight(goal = uiState.goal)
+        GoalHighlight(goal = uiState.goal, onEdit = onOpenTitleEditor)
 
         // ── Input Fields ────────────────────────────────────────────────
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -192,6 +215,7 @@ fun DailyGoalsSection(
         // ── Goal Summary Block ──────────────────────────────────────────
         GoalSummaryBlock(
             goal = uiState.goal,
+            onEditTitle = onOpenTitleEditor,
             onToggleSubtask = onToggleSubtask,
             isToggleEnabled = !uiState.isTogglingSubtask,
         )
@@ -199,12 +223,29 @@ fun DailyGoalsSection(
         // ── Today Activity Block ────────────────────────────────────────
         TodayActivityBlock(uiState.todayActivities)
     }
+
+    if (uiState.isTitleEditorVisible) {
+        TaskTitleEditorDialog(
+            title = "Edit main task",
+            subtitle = "Update the one outcome that leads today.",
+            value = uiState.editingTitle,
+            placeholder = "Rename main title",
+            isSaving = uiState.isSaving,
+            onValueChange = onEditingTitleChanged,
+            onDismiss = onDismissTitleEditor,
+            onSave = onSaveEditedTitle,
+            voiceCaptureButton = titleEditorVoiceCaptureButton,
+        )
+    }
 }
 
 // ── Goal Highlight Hero ─────────────────────────────────────────────────────
 
 @Composable
-private fun GoalHighlight(goal: DailyGoal?) {
+private fun GoalHighlight(
+    goal: DailyGoal?,
+    onEdit: () -> Unit,
+) {
     val ratio = if (goal == null || goal.totalSubtasks == 0) {
         0f
     } else {
@@ -231,6 +272,19 @@ private fun GoalHighlight(goal: DailyGoal?) {
             text = goal?.mainTitle ?: "No focus saved yet",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
+            modifier = if (goal != null) {
+                Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onEdit,
+                    )
+                    .padding(vertical = 2.dp)
+                    .testTag("daily_goal_current_title")
+            } else {
+                Modifier
+            },
         )
 
         Text(
@@ -242,6 +296,14 @@ private fun GoalHighlight(goal: DailyGoal?) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        if (goal != null) {
+            Text(
+                text = "Tap the main title to rename it",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         // ── Progress Bar ────────────────────────────────────────────
         Box(
@@ -327,6 +389,7 @@ private fun MinimalTextField(
 @Composable
 private fun GoalSummaryBlock(
     goal: DailyGoal?,
+    onEditTitle: () -> Unit,
     onToggleSubtask: (Long, Boolean) -> Unit,
     isToggleEnabled: Boolean,
 ) {
@@ -350,6 +413,15 @@ private fun GoalSummaryBlock(
             text = goal.mainTitle,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onEditTitle,
+                )
+                .padding(vertical = 2.dp)
+                .testTag("daily_goal_summary_title"),
         )
 
         Text(

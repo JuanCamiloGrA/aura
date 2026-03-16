@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
+import com.humans.aura.core.presentation.components.TaskTitleEditorDialog
 import com.humans.aura.features.voice.presentation.VoiceCaptureButton
 import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
@@ -62,6 +66,12 @@ fun StopwatchSection(
             idleLabel = "HOLD TO TALK FOR NEW ACTIVITY",
         )
     },
+    titleEditorVoiceCaptureButton: @Composable ((String) -> Unit) -> Unit = { onTranscribed ->
+        VoiceCaptureButton(
+            onSendTranscript = onTranscribed,
+            idleLabel = "HOLD TO SPEAK TITLE",
+        )
+    },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -72,10 +82,15 @@ fun StopwatchSection(
         onRefreshPrediction = viewModel::refreshPrediction,
         onLogNewActivity = viewModel::logNewActivity,
         onLogVoiceActivity = viewModel::logVoiceActivity,
+        onOpenTitleEditor = viewModel::openTitleEditor,
+        onEditingTitleChanged = viewModel::onEditingTitleChanged,
+        onSaveEditedTitle = viewModel::saveCurrentActivityTitle,
+        onDismissTitleEditor = viewModel::dismissTitleEditor,
         onMarkInaccurate = viewModel::markInaccurate,
         onMarkLost = viewModel::markLost,
         onClearHonestyLabel = viewModel::clearHonestyLabel,
         voiceCaptureButton = { voiceCaptureButton(viewModel::logVoiceActivity) },
+        titleEditorVoiceCaptureButton = titleEditorVoiceCaptureButton,
     )
 }
 
@@ -87,6 +102,10 @@ fun StopwatchSection(
     onRefreshPrediction: () -> Unit,
     onLogNewActivity: () -> Unit,
     onLogVoiceActivity: (String) -> Unit,
+    onOpenTitleEditor: () -> Unit = {},
+    onEditingTitleChanged: (String) -> Unit = {},
+    onSaveEditedTitle: () -> Unit = {},
+    onDismissTitleEditor: () -> Unit = {},
     onMarkInaccurate: () -> Unit,
     onMarkLost: () -> Unit,
     onClearHonestyLabel: () -> Unit,
@@ -94,6 +113,12 @@ fun StopwatchSection(
         VoiceCaptureButton(
             onSendTranscript = onLogVoiceActivity,
             idleLabel = "HOLD TO TALK FOR NEW ACTIVITY",
+        )
+    },
+    titleEditorVoiceCaptureButton: @Composable ((String) -> Unit) -> Unit = { onTranscribed ->
+        VoiceCaptureButton(
+            onSendTranscript = onTranscribed,
+            idleLabel = "HOLD TO SPEAK TITLE",
         )
     },
 ) {
@@ -123,6 +148,7 @@ fun StopwatchSection(
         TimerHero(
             activity = uiState.currentActivity,
             runningDurationLabel = uiState.runningDurationLabel,
+            onEditCurrentActivity = onOpenTitleEditor,
         )
 
         // ── Input + CTA ─────────────────────────────────────────────────
@@ -240,6 +266,20 @@ fun StopwatchSection(
             )
         }
     }
+
+    if (uiState.isTitleEditorVisible) {
+        TaskTitleEditorDialog(
+            title = "Edit current task",
+            subtitle = "Refine what you are doing right now.",
+            value = uiState.editingTitle,
+            placeholder = "Rename current activity",
+            isSaving = uiState.isLogging,
+            onValueChange = onEditingTitleChanged,
+            onDismiss = onDismissTitleEditor,
+            onSave = onSaveEditedTitle,
+            voiceCaptureButton = titleEditorVoiceCaptureButton,
+        )
+    }
 }
 
 // ── Timer Hero ──────────────────────────────────────────────────────────────
@@ -248,6 +288,7 @@ fun StopwatchSection(
 private fun TimerHero(
     activity: Activity?,
     runningDurationLabel: String,
+    onEditCurrentActivity: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -280,7 +321,28 @@ private fun TimerHero(
             },
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = if (activity != null) {
+                Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onEditCurrentActivity,
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .testTag("current_activity_title")
+            } else {
+                Modifier
+            },
         )
+
+        if (activity != null) {
+            Text(
+                text = "Tap the task name to rename it",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         if (activity != null && activity.status != ActivityStatus.ACCURATE) {
             Spacer(Modifier.height(2.dp))

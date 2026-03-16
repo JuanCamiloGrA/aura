@@ -168,6 +168,7 @@ class ZipBackupRepositoryTest {
             windowMillis: Long,
         ): ActivityPredictionEntity? = null
         override suspend fun updateCurrentActivityStatus(status: String): Int = 0
+        override suspend fun updateCurrentActivityTitle(title: String): Int = 0
         override suspend fun insertAll(activities: List<ActivityEntity>) { this.activities += activities }
         override suspend fun deleteAllActivities() { activities.clear() }
     }
@@ -184,6 +185,7 @@ class ZipBackupRepositoryTest {
         override suspend fun insertGoal(goal: DailyGoalEntity): Long = goal.id
         override suspend fun insertGoals(goals: List<DailyGoalEntity>) { this.goals += goals }
         override suspend fun updateGoal(goal: DailyGoalEntity) = Unit
+        override suspend fun updateGoalTitle(dayStartEpochMillis: Long, mainTitle: String) = Unit
         override suspend fun insertSubtasks(subtasks: List<GoalSubtaskEntity>) { this.subtasks += subtasks }
         override suspend fun updateSubtaskCompletion(subtaskId: Long, isCompleted: Boolean) = Unit
         override suspend fun deleteSubtasksForGoal(goalId: Long) = Unit

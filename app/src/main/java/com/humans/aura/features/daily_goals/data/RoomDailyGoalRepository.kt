@@ -41,6 +41,13 @@ class RoomDailyGoalRepository(
         )
     }
 
+    override suspend fun updateTodayGoalTitle(title: String) {
+        dailyGoalDao.updateGoalTitle(
+            dayStartEpochMillis = timeProvider.currentDayStartEpochMillis(),
+            mainTitle = title.trim(),
+        )
+    }
+
     override suspend fun toggleSubtask(subtaskId: Long, isCompleted: Boolean) {
         dailyGoalDao.updateSubtaskCompletion(subtaskId, isCompleted)
     }

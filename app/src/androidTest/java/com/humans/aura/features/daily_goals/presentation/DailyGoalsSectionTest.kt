@@ -11,6 +11,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import com.humans.aura.core.domain.models.Activity
 import com.humans.aura.core.domain.models.ActivityStatus
 import com.humans.aura.core.domain.models.DailyGoal
@@ -162,5 +164,85 @@ class DailyGoalsSectionTest {
         }
 
         composeRule.onNodeWithText("Undo").assertIsNotEnabled()
+    }
+
+    @Test
+    fun tapping_goal_title_opens_editor_and_voice_can_fill_it() {
+        var editedTitle = "Ship milestone"
+        var saved = 0
+
+        composeRule.setContent {
+            AuraTheme {
+                DailyGoalsSection(
+                    uiState = DailyGoalsUiState(
+                        goal = DailyGoal(
+                            id = 1,
+                            dayStartEpochMillis = 0L,
+                            mainTitle = "Ship milestone",
+                            subtasks = listOf(GoalSubtask(1, 1, "Factory", true, 0, false)),
+                            isSyncedToD1 = false,
+                        ),
+                        editingTitle = editedTitle,
+                        isTitleEditorVisible = true,
+                    ),
+                    onMainTitleChanged = {},
+                    onSubtaskChanged = { _, _ -> },
+                    onOpenTitleEditor = {},
+                    onEditingTitleChanged = { editedTitle = it },
+                    onSaveEditedTitle = { saved += 1 },
+                    onDismissTitleEditor = {},
+                    onToggleSubtask = { _, _ -> },
+                    onSaveTodayGoal = {},
+                    onClearTodayGoal = {},
+                    titleEditorVoiceCaptureButton = { onTranscribed ->
+                        TextButton(onClick = { onTranscribed("Voice focused title") }) {
+                            Text("VOICE TITLE")
+                        }
+                    },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("daily_goal_summary_title").performClick()
+        composeRule.onNodeWithTag("task_title_editor_dialog").assertIsDisplayed()
+        composeRule.onNodeWithText("VOICE TITLE").performClick()
+        composeRule.onNodeWithTag("task_title_editor_save_button").performClick()
+
+        assertEquals("Voice focused title", editedTitle)
+        assertEquals(1, saved)
+    }
+
+    @Test
+    fun tapping_goal_summary_title_triggers_edit_callback() {
+        var opened = 0
+
+        composeRule.setContent {
+            AuraTheme {
+                DailyGoalsSection(
+                    uiState = DailyGoalsUiState(
+                        goal = DailyGoal(
+                            id = 1,
+                            dayStartEpochMillis = 0L,
+                            mainTitle = "Ship milestone",
+                            subtasks = listOf(GoalSubtask(1, 1, "Factory", true, 0, false)),
+                            isSyncedToD1 = false,
+                        ),
+                    ),
+                    onMainTitleChanged = {},
+                    onSubtaskChanged = { _, _ -> },
+                    onOpenTitleEditor = { opened += 1 },
+                    onEditingTitleChanged = {},
+                    onSaveEditedTitle = {},
+                    onDismissTitleEditor = {},
+                    onToggleSubtask = { _, _ -> },
+                    onSaveTodayGoal = {},
+                    onClearTodayGoal = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("daily_goal_summary_title").performClick()
+
+        assertEquals(1, opened)
     }
 }

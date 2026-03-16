@@ -114,6 +114,8 @@ class RoomConversationContextRepositoryTest {
 
         override suspend fun predictNextTitle(nowEpochMillis: Long): ActivityPrediction? = null
 
+        override suspend fun updateCurrentActivityTitle(title: String) = Unit
+
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
     }
 
@@ -127,6 +129,8 @@ class RoomConversationContextRepositoryTest {
         override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<com.humans.aura.core.domain.models.GoalSubtaskDraft>) {
             error("Not needed in test")
         }
+
+        override suspend fun updateTodayGoalTitle(title: String) = Unit
 
         override suspend fun toggleSubtask(subtaskId: Long, isCompleted: Boolean) = Unit
 

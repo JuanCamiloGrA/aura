@@ -16,6 +16,7 @@ import com.humans.aura.features.daily_goals.domain.ObserveTodayActivitiesUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.SaveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ToggleGoalSubtaskUseCase
+import com.humans.aura.features.daily_goals.domain.UpdateTodayGoalTitleUseCase
 import com.humans.aura.core.domain.models.ActivityPrediction
 import com.humans.aura.core.domain.models.LogNewActivityCommand
 import kotlinx.coroutines.flow.Flow
@@ -83,6 +84,51 @@ class DailyGoalsViewModelTest {
         assertEquals(99L to true, goalRepository.toggledSubtask)
     }
 
+    @Test
+    fun open_and_save_title_editor_updates_goal_title() = runTest {
+        val goalRepository = FakeDailyGoalRepository(
+            goal = DailyGoal(
+                id = 1,
+                dayStartEpochMillis = 0L,
+                mainTitle = "Protect deep work",
+                subtasks = listOf(GoalSubtask(1, 1, "Focus", false, 0, false)),
+                isSyncedToD1 = false,
+            ),
+        )
+        val viewModel = createViewModel(goalRepository)
+        advanceUntilIdle()
+
+        viewModel.openTitleEditor()
+        viewModel.onEditingTitleChanged("  Ship milestone  ")
+        viewModel.saveEditedTitle()
+        advanceUntilIdle()
+
+        assertEquals("Ship milestone", goalRepository.updatedTitle)
+        assertEquals(false, viewModel.uiState.value.isTitleEditorVisible)
+    }
+
+    @Test
+    fun dismiss_title_editor_clears_editor_state() = runTest {
+        val goalRepository = FakeDailyGoalRepository(
+            goal = DailyGoal(
+                id = 1,
+                dayStartEpochMillis = 0L,
+                mainTitle = "Protect deep work",
+                subtasks = listOf(GoalSubtask(1, 1, "Focus", false, 0, false)),
+                isSyncedToD1 = false,
+            ),
+        )
+        val viewModel = createViewModel(goalRepository)
+        advanceUntilIdle()
+
+        viewModel.openTitleEditor()
+        viewModel.onEditingTitleChanged("Changed")
+        viewModel.dismissTitleEditor()
+
+        assertEquals(false, viewModel.uiState.value.isTitleEditorVisible)
+        assertEquals("", viewModel.uiState.value.editingTitle)
+    }
+
     private fun createViewModel(
         goalRepository: FakeDailyGoalRepository,
     ): DailyGoalsViewModel {
@@ -93,6 +139,7 @@ class DailyGoalsViewModelTest {
             observeTodayGoalUseCase = ObserveTodayGoalUseCase(goalRepository),
             observeTodayActivitiesUseCase = ObserveTodayActivitiesUseCase(activityRepository, timeProvider),
             saveTodayGoalUseCase = SaveTodayGoalUseCase(goalRepository, wallpaperController),
+            updateTodayGoalTitleUseCase = UpdateTodayGoalTitleUseCase(goalRepository, wallpaperController),
             toggleGoalSubtaskUseCase = ToggleGoalSubtaskUseCase(goalRepository),
             clearTodayGoalUseCase = ClearTodayGoalUseCase(goalRepository),
         )
@@ -103,6 +150,7 @@ class DailyGoalsViewModelTest {
     ) : DailyGoalRepository {
         private val goalFlow = MutableStateFlow(goal)
         var savedMainTitle: String? = null
+        var updatedTitle: String? = null
         var savedSubtasks: List<GoalSubtaskDraft> = emptyList()
         var toggledSubtask: Pair<Long, Boolean>? = null
 
@@ -113,6 +161,11 @@ class DailyGoalsViewModelTest {
         override suspend fun saveTodayGoal(mainTitle: String, subtasks: List<GoalSubtaskDraft>) {
             savedMainTitle = mainTitle
             savedSubtasks = subtasks
+        }
+
+        override suspend fun updateTodayGoalTitle(title: String) {
+            updatedTitle = title
+            goalFlow.value = goalFlow.value?.copy(mainTitle = title)
         }
 
         override suspend fun toggleSubtask(subtaskId: Long, isCompleted: Boolean) {
@@ -130,6 +183,7 @@ class DailyGoalsViewModelTest {
         override fun observeActivitiesForDay(dayStartEpochMillis: Long): Flow<List<Activity>> = MutableStateFlow(listOf(Activity(1, "Focus", 0L, null, ActivityStatus.ACTIVE, false)))
         override suspend fun logNewActivity(command: LogNewActivityCommand): Activity = throw UnsupportedOperationException()
         override suspend fun predictNextTitle(nowEpochMillis: Long): ActivityPrediction? = null
+        override suspend fun updateCurrentActivityTitle(title: String) = Unit
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
     }
 

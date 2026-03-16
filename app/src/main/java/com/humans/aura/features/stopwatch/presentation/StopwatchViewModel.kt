@@ -11,6 +11,7 @@ import com.humans.aura.features.stopwatch.domain.LogNewActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveCurrentActivityUseCase
 import com.humans.aura.features.stopwatch.domain.ObserveRecentActivitiesUseCase
 import com.humans.aura.features.stopwatch.domain.PredictNextActivityTitleUseCase
+import com.humans.aura.features.stopwatch.domain.UpdateCurrentActivityTitleUseCase
 import com.humans.aura.features.stopwatch.domain.UpdateCurrentActivityStatusUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,6 +27,7 @@ class StopwatchViewModel(
     private val ensureInitialActivityUseCase: EnsureInitialActivityUseCase,
     private val logNewActivityUseCase: LogNewActivityUseCase,
     private val predictNextActivityTitleUseCase: PredictNextActivityTitleUseCase,
+    private val updateCurrentActivityTitleUseCase: UpdateCurrentActivityTitleUseCase,
     private val updateCurrentActivityStatusUseCase: UpdateCurrentActivityStatusUseCase,
     timeProvider: TimeProvider,
     currentTimeTicker: CurrentTimeTicker,
@@ -34,22 +36,45 @@ class StopwatchViewModel(
     private val draftTitle = MutableStateFlow("")
     private val prediction = MutableStateFlow<ActivityPrediction?>(null)
     private val isPredictionAutofilled = MutableStateFlow(false)
+    private val editingTitle = MutableStateFlow("")
+    private val isTitleEditorVisible = MutableStateFlow(false)
     private val isLogging = MutableStateFlow(false)
     private val nowEpochMillis = currentTimeTicker.tickEvery(RUNNING_DURATION_TICK_MILLIS).stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
         initialValue = timeProvider.currentTimeMillis(),
     )
-    private val draftState = combine(
+    private val draftInputState = combine(
         draftTitle,
         prediction,
         isPredictionAutofilled,
-        isLogging,
-    ) { currentDraftTitle, currentPrediction, predictionAutofilled, logging ->
-        DraftState(
+    ) { currentDraftTitle, currentPrediction, predictionAutofilled ->
+        DraftInputState(
             draftTitle = currentDraftTitle,
             prediction = currentPrediction,
             isPredictionAutofilled = predictionAutofilled,
+        )
+    }
+    private val titleEditorState = combine(
+        editingTitle,
+        isTitleEditorVisible,
+    ) { currentEditingTitle, titleEditorVisible ->
+        TitleEditorState(
+            editingTitle = currentEditingTitle,
+            isTitleEditorVisible = titleEditorVisible,
+        )
+    }
+    private val draftState = combine(
+        draftInputState,
+        titleEditorState,
+        isLogging,
+    ) { inputState, editorState, logging ->
+        DraftState(
+            draftTitle = inputState.draftTitle,
+            prediction = inputState.prediction,
+            isPredictionAutofilled = inputState.isPredictionAutofilled,
+            editingTitle = editorState.editingTitle,
+            isTitleEditorVisible = editorState.isTitleEditorVisible,
             isLogging = logging,
         )
     }
@@ -69,6 +94,8 @@ class StopwatchViewModel(
             runningDurationLabel = currentActivity?.let { activity ->
                 formatRunningDuration(activity, currentNowEpochMillis)
             } ?: EMPTY_DURATION_LABEL,
+            editingTitle = currentDraftState.editingTitle,
+            isTitleEditorVisible = currentDraftState.isTitleEditorVisible,
             isLoading = false,
             isLogging = currentDraftState.isLogging,
             isVoiceLoggingEnabled = !currentDraftState.isLogging,
@@ -104,6 +131,39 @@ class StopwatchViewModel(
 
     fun logVoiceActivity(title: String) {
         logNewActivityWithTitle(title)
+    }
+
+    fun openTitleEditor() {
+        val currentTitle = uiState.value.currentActivity?.title.orEmpty()
+        if (currentTitle.isBlank()) return
+
+        editingTitle.value = currentTitle
+        isTitleEditorVisible.value = true
+    }
+
+    fun onEditingTitleChanged(value: String) {
+        editingTitle.value = value
+    }
+
+    fun saveCurrentActivityTitle() {
+        if (isLogging.value) return
+
+        viewModelScope.launch {
+            isLogging.value = true
+            runCatching {
+                updateCurrentActivityTitleUseCase(editingTitle.value)
+            }.onSuccess {
+                editingTitle.value = ""
+                isTitleEditorVisible.value = false
+            }.also {
+                isLogging.value = false
+            }
+        }
+    }
+
+    fun dismissTitleEditor() {
+        isTitleEditorVisible.value = false
+        editingTitle.value = ""
     }
 
     private fun logNewActivityWithTitle(rawTitle: String) {
@@ -175,7 +235,20 @@ class StopwatchViewModel(
         val draftTitle: String,
         val prediction: ActivityPrediction?,
         val isPredictionAutofilled: Boolean,
+        val editingTitle: String,
+        val isTitleEditorVisible: Boolean,
         val isLogging: Boolean,
+    )
+
+    private data class DraftInputState(
+        val draftTitle: String,
+        val prediction: ActivityPrediction?,
+        val isPredictionAutofilled: Boolean,
+    )
+
+    private data class TitleEditorState(
+        val editingTitle: String,
+        val isTitleEditorVisible: Boolean,
     )
 
     private companion object {

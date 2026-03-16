@@ -8,6 +8,7 @@ import com.humans.aura.features.daily_goals.domain.ObserveTodayActivitiesUseCase
 import com.humans.aura.features.daily_goals.domain.ObserveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.SaveTodayGoalUseCase
 import com.humans.aura.features.daily_goals.domain.ToggleGoalSubtaskUseCase
+import com.humans.aura.features.daily_goals.domain.UpdateTodayGoalTitleUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,23 +20,46 @@ class DailyGoalsViewModel(
     observeTodayGoalUseCase: ObserveTodayGoalUseCase,
     observeTodayActivitiesUseCase: ObserveTodayActivitiesUseCase,
     private val saveTodayGoalUseCase: SaveTodayGoalUseCase,
+    private val updateTodayGoalTitleUseCase: UpdateTodayGoalTitleUseCase,
     private val toggleGoalSubtaskUseCase: ToggleGoalSubtaskUseCase,
     private val clearTodayGoalUseCase: ClearTodayGoalUseCase,
 ) : ViewModel() {
 
     private val mainTitleInput = MutableStateFlow("")
     private val subtaskInputs = MutableStateFlow(listOf("", "", ""))
+    private val editingTitle = MutableStateFlow("")
+    private val isTitleEditorVisible = MutableStateFlow(false)
     private val isSaving = MutableStateFlow(false)
     private val isTogglingSubtask = MutableStateFlow(false)
-    private val formState = combine(
+    private val goalInputState = combine(
         mainTitleInput,
         subtaskInputs,
-        isSaving,
-        isTogglingSubtask,
-    ) { mainTitle, subtasks, saving, toggling ->
-        GoalFormState(
+    ) { mainTitle, subtasks ->
+        GoalInputState(
             mainTitle = mainTitle,
             subtasks = subtasks,
+        )
+    }
+    private val titleEditorState = combine(
+        editingTitle,
+        isTitleEditorVisible,
+    ) { currentEditingTitle, titleEditorVisible ->
+        TitleEditorState(
+            editingTitle = currentEditingTitle,
+            isTitleEditorVisible = titleEditorVisible,
+        )
+    }
+    private val formState = combine(
+        goalInputState,
+        titleEditorState,
+        isSaving,
+        isTogglingSubtask,
+    ) { inputState, editorState, saving, toggling ->
+        GoalFormState(
+            mainTitle = inputState.mainTitle,
+            subtasks = inputState.subtasks,
+            editingTitle = editorState.editingTitle,
+            isTitleEditorVisible = editorState.isTitleEditorVisible,
             isSaving = saving,
             isToggling = toggling,
         )
@@ -51,6 +75,8 @@ class DailyGoalsViewModel(
             mainTitleInput = if (formState.mainTitle.isBlank()) goal?.mainTitle.orEmpty() else formState.mainTitle,
             subtaskInputs = mergeSubtaskInputs(goal, formState.subtasks),
             todayActivities = todayActivities,
+            editingTitle = formState.editingTitle,
+            isTitleEditorVisible = formState.isTitleEditorVisible,
             isLoading = false,
             isSaving = formState.isSaving,
             isTogglingSubtask = formState.isToggling,
@@ -72,6 +98,39 @@ class DailyGoalsViewModel(
         }
         mutable[index] = value
         subtaskInputs.value = mutable
+    }
+
+    fun openTitleEditor() {
+        val currentTitle = uiState.value.goal?.mainTitle.orEmpty()
+        if (currentTitle.isBlank()) return
+
+        editingTitle.value = currentTitle
+        isTitleEditorVisible.value = true
+    }
+
+    fun onEditingTitleChanged(value: String) {
+        editingTitle.value = value
+    }
+
+    fun saveEditedTitle() {
+        if (isSaving.value) return
+
+        viewModelScope.launch {
+            isSaving.value = true
+            runCatching {
+                updateTodayGoalTitleUseCase(editingTitle.value)
+            }.onSuccess {
+                editingTitle.value = ""
+                isTitleEditorVisible.value = false
+            }.also {
+                isSaving.value = false
+            }
+        }
+    }
+
+    fun dismissTitleEditor() {
+        isTitleEditorVisible.value = false
+        editingTitle.value = ""
     }
 
     fun saveTodayGoal() {
@@ -116,6 +175,8 @@ class DailyGoalsViewModel(
             clearTodayGoalUseCase()
             mainTitleInput.value = ""
             subtaskInputs.value = listOf("", "", "")
+            editingTitle.value = ""
+            isTitleEditorVisible.value = false
         }
     }
 
@@ -134,7 +195,19 @@ class DailyGoalsViewModel(
     private data class GoalFormState(
         val mainTitle: String,
         val subtasks: List<String>,
+        val editingTitle: String,
+        val isTitleEditorVisible: Boolean,
         val isSaving: Boolean,
         val isToggling: Boolean,
+    )
+
+    private data class GoalInputState(
+        val mainTitle: String,
+        val subtasks: List<String>,
+    )
+
+    private data class TitleEditorState(
+        val editingTitle: String,
+        val isTitleEditorVisible: Boolean,
     )
 }

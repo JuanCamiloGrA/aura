@@ -50,6 +50,7 @@ class LogNewActivityUseCaseTest {
         }
 
         override suspend fun predictNextTitle(nowEpochMillis: Long) = null
+        override suspend fun updateCurrentActivityTitle(title: String) = Unit
         override suspend fun updateCurrentActivityStatus(status: ActivityStatus) = Unit
     }
 

@@ -90,6 +90,7 @@ class RepositoryModuleTest {
         override suspend fun closeOpenActivities(timestampEpochMillis: Long): Int = 0
         override suspend fun findPrediction(historyStartEpochMillis: Long, currentEpochMillis: Long, dayDurationMillis: Long, timeOfDayEpochMillis: Long, windowMillis: Long): ActivityPredictionEntity? = null
         override suspend fun updateCurrentActivityStatus(status: String): Int = 0
+        override suspend fun updateCurrentActivityTitle(title: String): Int = 0
         override suspend fun insertAll(activities: List<ActivityEntity>) = Unit
         override suspend fun deleteAllActivities() = Unit
     }
@@ -103,6 +104,7 @@ class RepositoryModuleTest {
         override suspend fun insertGoal(goal: DailyGoalEntity): Long = 1L
         override suspend fun insertGoals(goals: List<DailyGoalEntity>) = Unit
         override suspend fun updateGoal(goal: DailyGoalEntity) = Unit
+        override suspend fun updateGoalTitle(dayStartEpochMillis: Long, mainTitle: String) = Unit
         override suspend fun insertSubtasks(subtasks: List<GoalSubtaskEntity>) = Unit
         override suspend fun updateSubtaskCompletion(subtaskId: Long, isCompleted: Boolean) = Unit
         override suspend fun deleteSubtasksForGoal(goalId: Long) = Unit
